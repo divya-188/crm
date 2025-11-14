@@ -57,6 +57,186 @@ export class RenewalSchedulerService {
   }
 
   /**
+   * Runs daily at 10 AM to send renewal reminder emails
+   * Sends reminders at 7, 3, and 1 days before renewal
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async processRenewalReminders() {
+    this.logger.log('Starting renewal reminder processing...');
+
+    try {
+      // Process reminders for each threshold
+      const reminderDays = [7, 3, 1];
+
+      for (const days of reminderDays) {
+        await this.sendRemindersForDay(days);
+      }
+
+      this.logger.log('Renewal reminder processing completed');
+    } catch (error) {
+      this.logger.error(
+        `Error in renewal reminder processing: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Runs daily at 3 AM to check for expired grace periods and suspend subscriptions
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  async processGracePeriodExpirations() {
+    this.logger.log('Starting grace period expiration processing...');
+
+    try {
+      const now = new Date();
+
+      // Find subscriptions with expired grace periods
+      const expiredGracePeriodSubscriptions = await this.subscriptionRepository
+        .createQueryBuilder('subscription')
+        .leftJoinAndSelect('subscription.plan', 'plan')
+        .leftJoinAndSelect('subscription.tenant', 'tenant')
+        .where('subscription.status = :status', { status: SubscriptionStatus.PAST_DUE })
+        .andWhere('subscription.gracePeriodEnd IS NOT NULL')
+        .andWhere('subscription.gracePeriodEnd <= :now', { now })
+        .getMany();
+
+      this.logger.log(
+        `Found ${expiredGracePeriodSubscriptions.length} subscriptions with expired grace periods`,
+      );
+
+      for (const subscription of expiredGracePeriodSubscriptions) {
+        try {
+          await this.suspendSubscription(subscription);
+        } catch (error) {
+          this.logger.error(
+            `Failed to suspend subscription ${subscription.id}: ${error.message}`,
+            error.stack,
+          );
+        }
+      }
+
+      this.logger.log('Grace period expiration processing completed');
+    } catch (error) {
+      this.logger.error(
+        `Error in grace period expiration processing: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Suspend a subscription after grace period expiration
+   */
+  private async suspendSubscription(subscription: Subscription): Promise<void> {
+    this.logger.warn(
+      `Suspending subscription ${subscription.id} due to expired grace period`,
+    );
+
+    // Update subscription status to suspended
+    subscription.status = SubscriptionStatus.SUSPENDED;
+    subscription.gracePeriodEnd = null; // Clear grace period end date
+
+    await this.subscriptionRepository.save(subscription);
+
+    // Send suspension notification email
+    await this.emailService.sendSubscriptionSuspended(subscription);
+
+    this.logger.log(
+      `Subscription ${subscription.id} has been suspended`,
+    );
+  }
+
+  /**
+   * Send renewal reminders for subscriptions expiring in X days
+   */
+  private async sendRemindersForDay(daysUntilRenewal: number): Promise<void> {
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + daysUntilRenewal);
+    
+    // Set to start of day for comparison
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Find subscriptions expiring on the target date
+    const subscriptions = await this.subscriptionRepository
+      .createQueryBuilder('subscription')
+      .leftJoinAndSelect('subscription.plan', 'plan')
+      .leftJoinAndSelect('subscription.tenant', 'tenant')
+      .where('subscription.status = :status', { status: 'active' })
+      .andWhere('subscription.autoRenew = :autoRenew', { autoRenew: true })
+      .andWhere('subscription.endDate >= :targetDate', { targetDate })
+      .andWhere('subscription.endDate < :nextDay', { nextDay })
+      .getMany();
+
+    this.logger.log(
+      `Found ${subscriptions.length} subscriptions expiring in ${daysUntilRenewal} days`,
+    );
+
+    for (const subscription of subscriptions) {
+      try {
+        // Check if reminder was already sent for this day
+        if (this.wasReminderSent(subscription, daysUntilRenewal)) {
+          this.logger.log(
+            `Reminder already sent for subscription ${subscription.id} at ${daysUntilRenewal} days`,
+          );
+          continue;
+        }
+
+        // Send reminder email
+        await this.emailService.sendRenewalReminder(
+          subscription,
+          daysUntilRenewal,
+        );
+
+        // Mark reminder as sent
+        await this.markReminderSent(subscription, daysUntilRenewal);
+
+        this.logger.log(
+          `Sent ${daysUntilRenewal}-day renewal reminder for subscription ${subscription.id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send reminder for subscription ${subscription.id}: ${error.message}`,
+          error.stack,
+        );
+      }
+    }
+  }
+
+  /**
+   * Check if a reminder was already sent for this subscription at this threshold
+   */
+  private wasReminderSent(
+    subscription: Subscription,
+    daysUntilRenewal: number,
+  ): boolean {
+    if (!subscription.renewalReminders) {
+      return false;
+    }
+
+    return subscription.renewalReminders.includes(daysUntilRenewal);
+  }
+
+  /**
+   * Mark that a reminder was sent for this subscription at this threshold
+   */
+  private async markReminderSent(
+    subscription: Subscription,
+    daysUntilRenewal: number,
+  ): Promise<void> {
+    if (!subscription.renewalReminders) {
+      subscription.renewalReminders = [];
+    }
+
+    if (!subscription.renewalReminders.includes(daysUntilRenewal)) {
+      subscription.renewalReminders.push(daysUntilRenewal);
+      await this.subscriptionRepository.save(subscription);
+    }
+  }
+
+  /**
    * Find subscriptions that are expiring within the specified number of days
    */
   async findExpiringSubscriptions(daysAhead: number): Promise<Subscription[]> {
@@ -193,6 +373,7 @@ export class RenewalSchedulerService {
     subscription.currentPeriodEnd = newEndDate;
     subscription.renewalAttempts = 0;
     subscription.gracePeriodEnd = null;
+    subscription.renewalReminders = []; // Reset reminders for next cycle
 
     await this.subscriptionRepository.save(subscription);
 

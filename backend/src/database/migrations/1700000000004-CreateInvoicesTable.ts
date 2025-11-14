@@ -90,6 +90,11 @@ export class CreateInvoicesTable1700000000004 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'pdfUrl',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
             name: 'items',
             type: 'jsonb',
             isNullable: true,

@@ -124,7 +124,7 @@
   - _Requirements: 4.5_
 
 
-- [ ] 5. Implement Invoice Generation
+- [x] 5. Implement Invoice Generation
   - Create invoice entity and migration
   - Implement PDF generation with PDFKit
   - Add invoice download endpoint
@@ -132,33 +132,33 @@
   - Send invoice emails
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 5.1 Create invoice database schema
+- [x] 5.1 Create invoice database schema
   - Add invoice entity with all required fields
   - Create migration for invoices table
   - Add relationship to subscriptions
   - _Requirements: 6.1, 6.4_
 
-- [ ] 5.2 Implement PDF invoice generation
+- [x] 5.2 Implement PDF invoice generation
   - Install and configure PDFKit
   - Create invoice template with company/customer details
   - Add line items, subtotal, tax, total
   - Generate professional-looking PDF
   - _Requirements: 6.2, 6.3_
 
-- [ ] 5.3 Create invoice download endpoint
+- [x] 5.3 Create invoice download endpoint
   - Add GET /invoices/:id/download endpoint
   - Verify user has access to invoice
   - Return PDF with proper headers
   - _Requirements: 6.3_
 
-- [ ] 5.4 Auto-generate invoices on payment
+- [x] 5.4 Auto-generate invoices on payment
   - Create invoice record on successful payment
   - Generate PDF and store URL
   - Send invoice email with PDF attachment
   - _Requirements: 6.1, 6.5_
 
 
-- [ ] 6. Implement Plan Upgrades and Downgrades
+- [x] 6. Implement Plan Upgrades and Downgrades
   - Add upgrade/downgrade endpoints
   - Calculate prorated charges for upgrades
   - Validate downgrade against current usage
@@ -166,32 +166,32 @@
   - Send plan change confirmation emails
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 6.1 Create upgrade endpoint
+- [x] 6.1 Create upgrade endpoint
   - Add PATCH /subscriptions/:id/upgrade
   - Accept new plan ID
   - Apply change immediately
   - _Requirements: 7.1_
 
-- [ ] 6.2 Implement prorated charge calculation
+- [x] 6.2 Implement prorated charge calculation
   - Calculate remaining days in current period
   - Calculate prorated amount for new plan
   - Process prorated payment
   - _Requirements: 7.2_
 
-- [ ] 6.3 Create downgrade endpoint
+- [x] 6.3 Create downgrade endpoint
   - Add PATCH /subscriptions/:id/downgrade
   - Validate current usage against new plan limits
   - Schedule change for period end
   - _Requirements: 7.3, 7.4_
 
-- [ ] 6.4 Send plan change notifications
+- [x] 6.4 Send plan change notifications
   - Email for successful upgrade
   - Email for scheduled downgrade
   - Include new plan details and effective date
   - _Requirements: 7.5_
 
 
-- [ ] 7. Implement Email Notification System
+- [x] 7. Implement Email Notification System
   - Create email templates for all subscription events
   - Implement email service methods
   - Configure email provider (SendGrid/AWS SES)
@@ -199,7 +199,7 @@
   - Add renewal reminder emails
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 7.1 Create email templates
+- [x] 7.1 Create email templates
   - subscription-welcome.hbs
   - payment-success.hbs
   - payment-failed.hbs
@@ -208,7 +208,7 @@
   - subscription-cancelled.hbs
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 7.2 Implement email service methods
+- [x] 7.2 Implement email service methods
   - sendSubscriptionWelcome()
   - sendPaymentSuccess()
   - sendPaymentFailed()
@@ -217,19 +217,19 @@
   - sendCancellationConfirmation()
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 7.3 Add quota monitoring for email triggers
+- [x] 7.3 Add quota monitoring for email triggers
   - Check quota usage after resource creation
   - Send warning at 80%, 90%, 95%
   - Store last warning sent to avoid spam
   - _Requirements: 8.4_
 
-- [ ] 7.4 Implement renewal reminder scheduler
+- [x] 7.4 Implement renewal reminder scheduler
   - Send reminders at 7, 3, and 1 days before expiration
   - Track which reminders have been sent
   - _Requirements: 8.5_
 
 
-- [ ] 8. Implement Grace Period Management
+- [x] 8. Implement Grace Period Management
   - Add grace period fields to subscription entity
   - Implement grace period activation on payment failure
   - Display warnings during grace period
@@ -237,37 +237,37 @@
   - Allow reactivation on successful payment
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 8.1 Update subscription entity for grace period
+- [x] 8.1 Update subscription entity for grace period
   - Add gracePeriodEnd timestamp field
   - Add migration for new field
   - _Requirements: 9.1_
 
-- [ ] 8.2 Activate grace period on payment failure
+- [x] 8.2 Activate grace period on payment failure
   - Set gracePeriodEnd to 7 days from failure
   - Keep subscription status as 'past_due'
   - Continue allowing service access
   - _Requirements: 9.1, 9.2_
 
-- [ ] 8.3 Add grace period warning middleware
+- [x] 8.3 Add grace period warning middleware
   - Check if subscription is in grace period
   - Add warning header to API responses
   - Display banner in frontend
   - _Requirements: 9.2_
 
-- [ ] 8.4 Implement subscription suspension
+- [x] 8.4 Implement subscription suspension
   - Create scheduler job to check expired grace periods
   - Update status to 'suspended'
   - Block all resource creation
   - _Requirements: 9.3, 9.4_
 
-- [ ] 8.5 Implement subscription reactivation
+- [x] 8.5 Implement subscription reactivation
   - Add POST /subscriptions/:id/reactivate endpoint
   - Process payment for outstanding amount
   - Restore subscription to 'active' status
   - _Requirements: 9.5_
 
 
-- [ ] 9. Create E2E Tests for Subscription Lifecycle
+- [x] 9. Create E2E Tests for Subscription Lifecycle
   - Test complete subscription creation flow
   - Test quota enforcement blocking
   - Test renewal process
@@ -275,34 +275,34 @@
   - Test plan upgrades and downgrades
   - _Requirements: All_
 
-- [ ] 9.1 Write quota enforcement E2E tests
+- [x] 9.1 Write quota enforcement E2E tests
   - Create resources up to quota limit
   - Verify blocking when limit reached
   - Test upgrade and continued creation
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 9.2 Write subscription creation E2E tests
+- [x] 9.2 Write subscription creation E2E tests
   - Test with mock payment gateway
   - Verify subscription activation
   - Check invoice generation
   - Verify welcome email sent
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 9.3 Write renewal E2E tests
+- [x] 9.3 Write renewal E2E tests
   - Mock time to trigger renewal
   - Test successful renewal
   - Test failed renewal with retries
   - Verify grace period activation
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 9.4 Write cancellation E2E tests
+- [x] 9.4 Write cancellation E2E tests
   - Test immediate cancellation
   - Test end-of-period cancellation
   - Verify payment gateway cancellation
   - Check confirmation email
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 9.5 Write plan change E2E tests
+- [x] 9.5 Write plan change E2E tests
   - Test upgrade with prorated charge
   - Test downgrade validation
   - Test scheduled downgrade execution

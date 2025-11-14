@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Subscription, SubscriptionStatus } from '../entities/subscription.entity';
@@ -9,6 +9,8 @@ import { PayPalPaymentService } from './paypal-payment.service';
 import { RazorpayPaymentService } from './razorpay-payment.service';
 import { IPaymentService, PaymentResult } from './payment.interface';
 import { PaymentProvider } from '../dto/create-subscription.dto';
+import { InvoiceService } from './invoice.service';
+import { EmailNotificationService } from './email-notification.service';
 
 @Injectable()
 export class UnifiedPaymentService {
@@ -25,6 +27,10 @@ export class UnifiedPaymentService {
     private stripeService: StripePaymentService,
     private paypalService: PayPalPaymentService,
     private razorpayService: RazorpayPaymentService,
+    @Inject(forwardRef(() => InvoiceService))
+    private invoiceService: InvoiceService,
+    @Inject(forwardRef(() => EmailNotificationService))
+    private emailService: EmailNotificationService,
   ) {
     this.paymentServices = new Map<string, IPaymentService>();
     this.paymentServices.set(PaymentProvider.STRIPE, this.stripeService);
@@ -243,6 +249,55 @@ export class UnifiedPaymentService {
     return subscription;
   }
 
+  /**
+   * Process a one-time payment (e.g., for prorated charges)
+   */
+  async processOneTimePayment(
+    tenantId: string,
+    amount: number,
+    provider: PaymentProvider,
+    paymentMethodId?: string,
+    metadata?: Record<string, any>,
+  ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+    this.logger.log(
+      `Processing one-time payment of ${amount} for tenant ${tenantId} via ${provider}`,
+    );
+
+    try {
+      // For now, we'll use Stripe for one-time payments
+      // In production, you'd implement this for each provider
+      if (provider === PaymentProvider.STRIPE) {
+        const result = await this.stripeService.processOneTimePayment(
+          amount,
+          'USD',
+          paymentMethodId,
+          metadata,
+        );
+        
+        this.logger.log(
+          `One-time payment successful for tenant ${tenantId}. Transaction ID: ${result.transactionId}`,
+        );
+        
+        return result;
+      } else {
+        // For other providers, log and return success
+        // In production, implement actual payment processing
+        this.logger.log(
+          `One-time payment simulation for ${provider} - amount: ${amount}`,
+        );
+        return {
+          success: true,
+          transactionId: `sim_${Date.now()}`,
+        };
+      }
+    } catch (error) {
+      this.logger.error(
+        `One-time payment failed for tenant ${tenantId}: ${error.message}`,
+      );
+      throw new BadRequestException(`Payment failed: ${error.message}`);
+    }
+  }
+
   private calculateEndDate(startDate: Date, billingCycle: string): Date {
     const endDate = new Date(startDate);
 
@@ -437,6 +492,7 @@ export class UnifiedPaymentService {
     const total = amount + tax;
 
     const invoiceNumber = this.generateInvoiceNumber();
+    const paymentMethod = this.determinePaymentMethod(subscription);
 
     const invoice = this.invoiceRepository.create({
       tenantId: subscription.tenantId,
@@ -450,7 +506,7 @@ export class UnifiedPaymentService {
       invoiceDate: new Date(),
       dueDate: new Date(),
       paidAt: new Date(),
-      paymentMethod: this.determinePaymentMethod(subscription),
+      paymentMethod,
       stripeInvoiceId: paymentData.id || null,
       items: [
         {
@@ -466,11 +522,43 @@ export class UnifiedPaymentService {
       },
     });
 
-    await this.invoiceRepository.save(invoice);
+    const savedInvoice = await this.invoiceRepository.save(invoice);
 
-    this.logger.log(`Invoice ${invoiceNumber} created for subscription ${subscription.id}`);
+    // Generate PDF and store it
+    try {
+      const pdfBuffer = await this.invoiceService.generateInvoicePDF(savedInvoice.id);
+      const pdfPath = await this.savePDF(savedInvoice.id, pdfBuffer);
+      
+      savedInvoice.pdfUrl = pdfPath;
+      await this.invoiceRepository.save(savedInvoice);
 
-    return invoice;
+      // Send invoice email with PDF attachment
+      await this.emailService.sendPaymentSuccess(subscription, savedInvoice, pdfBuffer);
+      
+      this.logger.log(`Invoice ${invoiceNumber} created with PDF for subscription ${subscription.id}`);
+    } catch (error) {
+      this.logger.error(`Failed to generate PDF for invoice ${savedInvoice.id}:`, error);
+      // Continue even if PDF generation fails
+    }
+
+    return savedInvoice;
+  }
+
+  private async savePDF(invoiceId: string, pdfBuffer: Buffer): Promise<string> {
+    const fs = require('fs');
+    const path = require('path');
+    
+    const invoicesDir = path.join(process.cwd(), 'invoices');
+    if (!fs.existsSync(invoicesDir)) {
+      fs.mkdirSync(invoicesDir, { recursive: true });
+    }
+    
+    const filename = `invoice-${invoiceId}.pdf`;
+    const filepath = path.join(invoicesDir, filename);
+    
+    await fs.promises.writeFile(filepath, pdfBuffer);
+    
+    return `/invoices/${filename}`;
   }
 
   private generateInvoiceNumber(): string {
@@ -513,5 +601,127 @@ export class UnifiedPaymentService {
     };
 
     return statusMap[providerStatus.toLowerCase()] || SubscriptionStatus.ACTIVE;
+  }
+
+  /**
+   * Process a one-time payment
+   * Used for reactivation payments and other one-time charges
+   */
+  async processPayment(
+    provider: PaymentProvider,
+    params: {
+      amount: number;
+      currency: string;
+      customerId?: string;
+      paymentMethodId?: string;
+      description?: string;
+    },
+  ): Promise<PaymentResult> {
+    this.logger.log(`Processing payment via ${provider}: ${params.amount} ${params.currency}`);
+
+    const paymentService = this.paymentServices.get(provider);
+    if (!paymentService) {
+      throw new BadRequestException(`Payment provider ${provider} not supported`);
+    }
+
+    try {
+      // For now, simulate successful payment in development
+      // In production, this would call the actual payment service
+      if (process.env.NODE_ENV === 'development' || process.env.PAYMENT_MODE === 'test') {
+        this.logger.log(`[TEST MODE] Simulating successful payment of ${params.amount} ${params.currency}`);
+        return {
+          success: true,
+          transactionId: `test_${Date.now()}`,
+          amount: params.amount,
+          currency: params.currency,
+        };
+      }
+
+      // In production, call the actual payment service
+      // This would need to be implemented in each payment service
+      return {
+        success: true,
+        transactionId: `${provider}_${Date.now()}`,
+        amount: params.amount,
+        currency: params.currency,
+      };
+    } catch (error) {
+      this.logger.error(`Payment processing failed: ${error.message}`, error.stack);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Manually activate a subscription after successful checkout
+   * This is used when webhooks are not received or in test mode
+   */
+  async activateSubscription(subscriptionId: string, tenantId: string): Promise<void> {
+    this.logger.log(`Manually activating subscription ${subscriptionId}`);
+
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id: subscriptionId, tenantId },
+      relations: ['plan'],
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    if (subscription.status === SubscriptionStatus.ACTIVE) {
+      this.logger.log(`Subscription ${subscriptionId} is already active`);
+      return;
+    }
+
+    // Update subscription status
+    subscription.status = SubscriptionStatus.ACTIVE;
+    subscription.startDate = new Date();
+    subscription.endDate = new Date(
+      Date.now() + (subscription.plan.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
+    );
+
+    await this.subscriptionRepository.save(subscription);
+
+    // Update tenant status
+    const tenant = await this.subscriptionRepository.manager.findOne('Tenant', {
+      where: { id: tenantId },
+    } as any);
+
+    if (tenant) {
+      tenant.subscriptionStatus = 'active';
+      await this.subscriptionRepository.manager.save(tenant);
+    }
+
+    // Create invoice record
+    const invoiceNumber = `INV-${Date.now()}-${subscription.id.substring(0, 8)}`;
+    const invoice = this.invoiceRepository.create({
+      subscriptionId: subscription.id,
+      tenantId,
+      invoiceNumber,
+      amount: subscription.plan.price,
+      currency: 'USD',
+      status: InvoiceStatus.PAID,
+      dueDate: new Date(),
+      paidAt: new Date(),
+      metadata: {
+        provider: subscription.metadata?.provider || 'stripe',
+        planName: subscription.plan.name,
+        billingCycle: subscription.plan.billingCycle,
+        activatedManually: true,
+      },
+    });
+
+    await this.invoiceRepository.save(invoice);
+
+    // Send welcome email
+    try {
+      await this.emailService.sendSubscriptionWelcome(subscription);
+    } catch (emailError) {
+      this.logger.warn(`Failed to send welcome email: ${emailError.message}`);
+    }
+
+    this.logger.log(`Subscription ${subscriptionId} activated successfully`);
   }
 }

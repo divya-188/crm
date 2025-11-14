@@ -155,4 +155,35 @@ export class SubscriptionsService {
 
     return subscription;
   }
+
+  async findBySessionId(sessionId: string, tenantId: string) {
+    // Use query builder to search in JSONB field
+    return this.subscriptionRepository
+      .createQueryBuilder('subscription')
+      .leftJoinAndSelect('subscription.plan', 'plan')
+      .where('subscription.tenantId = :tenantId', { tenantId })
+      .andWhere("subscription.metadata->>'sessionId' = :sessionId", { sessionId })
+      .getOne();
+  }
+
+  async getSessionStatus(sessionId: string, tenantId: string) {
+    const subscription = await this.findBySessionId(sessionId, tenantId);
+    
+    if (!subscription) {
+      return {
+        found: false,
+        message: 'Session not found',
+      };
+    }
+
+    return {
+      found: true,
+      subscription: {
+        id: subscription.id,
+        status: subscription.status,
+        planName: subscription.plan.name,
+        sessionId: subscription.metadata?.sessionId,
+      },
+    };
+  }
 }

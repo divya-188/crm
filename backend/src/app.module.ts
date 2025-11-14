@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -25,6 +25,7 @@ import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
+import { GracePeriodWarningMiddleware } from './common/middleware/grace-period-warning.middleware';
 
 @Module({
   imports: [
@@ -67,4 +68,10 @@ import { SuperAdminModule } from './modules/super-admin/super-admin.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(GracePeriodWarningMiddleware)
+      .forRoutes('*'); // Apply to all routes
+  }
+}

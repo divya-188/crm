@@ -18,6 +18,7 @@ export const SubscriptionStatus = {
   EXPIRED: 'expired',
   PAST_DUE: 'past_due',
   PAYMENT_FAILED: 'payment_failed',
+  SUSPENDED: 'suspended',
 } as const;
 
 export type SubscriptionStatusType = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
@@ -99,6 +100,9 @@ export class Subscription {
     expiryMonth?: number;
     expiryYear?: number;
   };
+
+  @Column({ type: 'jsonb', nullable: true, default: '[]' })
+  renewalReminders: number[];
 
   @CreateDateColumn()
   createdAt: Date;

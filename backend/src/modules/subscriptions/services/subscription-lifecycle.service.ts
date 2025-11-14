@@ -136,7 +136,7 @@ export class SubscriptionLifecycleService {
   ): Promise<Subscription> {
     const subscription = await this.subscriptionRepository.findOne({
       where: { id: subscriptionId },
-      relations: ['plan'],
+      relations: ['plan', 'tenant'],
     });
 
     if (!subscription) {
@@ -168,11 +168,40 @@ export class SubscriptionLifecycleService {
       `Upgrading subscription ${subscriptionId} from plan ${subscription.planId} to ${newPlanId}. Prorated amount: ${proratedAmount}`,
     );
 
+    // Process prorated payment if amount > 0
+    if (proratedAmount > 0) {
+      try {
+        await this.paymentService.processOneTimePayment(
+          subscription.tenantId,
+          proratedAmount,
+          provider,
+          paymentMethodId,
+          {
+            description: `Prorated charge for upgrade from ${subscription.plan.name} to ${newPlan.name}`,
+            subscriptionId: subscription.id,
+            type: 'upgrade_proration',
+          },
+        );
+        this.logger.log(
+          `Prorated payment of ${proratedAmount} processed successfully for subscription ${subscriptionId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to process prorated payment for subscription ${subscriptionId}: ${error.message}`,
+        );
+        throw new BadRequestException(
+          `Failed to process prorated payment: ${error.message}`,
+        );
+      }
+    }
+
+    const previousPlanId = subscription.planId;
+
     // Update subscription
     subscription.planId = newPlanId;
     subscription.metadata = {
       ...subscription.metadata,
-      previousPlanId: subscription.planId,
+      previousPlanId,
       upgradedAt: new Date().toISOString(),
       proratedAmount,
     };
@@ -185,6 +214,20 @@ export class SubscriptionLifecycleService {
       newPlanId,
       subscription.endDate,
     );
+
+    // Send upgrade confirmation email
+    try {
+      await this.emailService.sendUpgradeConfirmation(
+        subscription,
+        newPlan,
+        proratedAmount,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send upgrade confirmation email: ${error.message}`,
+      );
+      // Don't fail the upgrade if email fails
+    }
 
     this.logger.log(`Subscription ${subscriptionId} upgraded to plan ${newPlanId}`);
 
@@ -200,7 +243,7 @@ export class SubscriptionLifecycleService {
   ): Promise<Subscription> {
     const subscription = await this.subscriptionRepository.findOne({
       where: { id: subscriptionId },
-      relations: ['plan'],
+      relations: ['plan', 'tenant'],
     });
 
     if (!subscription) {
@@ -222,6 +265,12 @@ export class SubscriptionLifecycleService {
       );
     }
 
+    // Validate current usage against new plan limits
+    await this.validateUsageAgainstPlanLimits(
+      subscription.tenantId,
+      newPlan,
+    );
+
     // Schedule downgrade at end of current period
     subscription.metadata = {
       ...subscription.metadata,
@@ -230,6 +279,20 @@ export class SubscriptionLifecycleService {
     };
 
     await this.subscriptionRepository.save(subscription);
+
+    // Send downgrade confirmation email
+    try {
+      await this.emailService.sendDowngradeConfirmation(
+        subscription,
+        newPlan,
+        subscription.endDate,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send downgrade confirmation email: ${error.message}`,
+      );
+      // Don't fail the downgrade if email fails
+    }
 
     this.logger.log(
       `Subscription ${subscriptionId} scheduled for downgrade to plan ${newPlanId} at ${subscription.endDate}`,
@@ -645,6 +708,109 @@ export class SubscriptionLifecycleService {
   }
 
   /**
+   * Validate current usage against new plan limits
+   */
+  private async validateUsageAgainstPlanLimits(
+    tenantId: string,
+    newPlan: SubscriptionPlan,
+  ): Promise<void> {
+    // Get current usage counts
+    const [
+      contactsCount,
+      usersCount,
+      campaignsCount,
+      conversationsCount,
+      flowsCount,
+      automationsCount,
+      whatsappConnectionsCount,
+    ] = await Promise.all([
+      this.tenantRepository.manager.query(
+        'SELECT COUNT(*) as count FROM contacts WHERE "tenantId" = $1',
+        [tenantId],
+      ),
+      this.tenantRepository.manager.query(
+        'SELECT COUNT(*) as count FROM users WHERE "tenantId" = $1',
+        [tenantId],
+      ),
+      this.tenantRepository.manager.query(
+        'SELECT COUNT(*) as count FROM campaigns WHERE "tenantId" = $1',
+        [tenantId],
+      ),
+      this.tenantRepository.manager.query(
+        'SELECT COUNT(*) as count FROM conversations WHERE "tenantId" = $1',
+        [tenantId],
+      ),
+      this.tenantRepository.manager.query(
+        'SELECT COUNT(*) as count FROM flows WHERE "tenantId" = $1',
+        [tenantId],
+      ),
+      this.tenantRepository.manager.query(
+        'SELECT COUNT(*) as count FROM automations WHERE "tenantId" = $1',
+        [tenantId],
+      ),
+      this.tenantRepository.manager.query(
+        'SELECT COUNT(*) as count FROM whatsapp_connections WHERE "tenantId" = $1',
+        [tenantId],
+      ),
+    ]);
+
+    const usage = {
+      contacts: parseInt(contactsCount[0]?.count || '0'),
+      users: parseInt(usersCount[0]?.count || '0'),
+      campaigns: parseInt(campaignsCount[0]?.count || '0'),
+      conversations: parseInt(conversationsCount[0]?.count || '0'),
+      flows: parseInt(flowsCount[0]?.count || '0'),
+      automations: parseInt(automationsCount[0]?.count || '0'),
+      whatsappConnections: parseInt(whatsappConnectionsCount[0]?.count || '0'),
+    };
+
+    const violations: string[] = [];
+
+    // Check each resource type against new plan limits
+    if (usage.contacts > newPlan.features.maxContacts) {
+      violations.push(
+        `Contacts: ${usage.contacts} exceeds limit of ${newPlan.features.maxContacts}`,
+      );
+    }
+    if (usage.users > newPlan.features.maxUsers) {
+      violations.push(
+        `Users: ${usage.users} exceeds limit of ${newPlan.features.maxUsers}`,
+      );
+    }
+    if (usage.campaigns > newPlan.features.maxCampaigns) {
+      violations.push(
+        `Campaigns: ${usage.campaigns} exceeds limit of ${newPlan.features.maxCampaigns}`,
+      );
+    }
+    if (usage.conversations > newPlan.features.maxConversations) {
+      violations.push(
+        `Conversations: ${usage.conversations} exceeds limit of ${newPlan.features.maxConversations}`,
+      );
+    }
+    if (usage.flows > newPlan.features.maxFlows) {
+      violations.push(
+        `Flows: ${usage.flows} exceeds limit of ${newPlan.features.maxFlows}`,
+      );
+    }
+    if (usage.automations > newPlan.features.maxAutomations) {
+      violations.push(
+        `Automations: ${usage.automations} exceeds limit of ${newPlan.features.maxAutomations}`,
+      );
+    }
+    if (usage.whatsappConnections > newPlan.features.whatsappConnections) {
+      violations.push(
+        `WhatsApp Connections: ${usage.whatsappConnections} exceeds limit of ${newPlan.features.whatsappConnections}`,
+      );
+    }
+
+    if (violations.length > 0) {
+      throw new BadRequestException(
+        `Cannot downgrade: Current usage exceeds new plan limits. ${violations.join('; ')}`,
+      );
+    }
+  }
+
+  /**
    * Private helper methods
    */
 
@@ -839,5 +1005,97 @@ export class SubscriptionLifecycleService {
     };
 
     await this.subscriptionRepository.save(subscription);
+  }
+
+  /**
+   * Reactivate a suspended subscription
+   * Processes payment for outstanding amount and restores subscription to active status
+   */
+  async reactivateSubscription(
+    subscriptionId: string,
+    tenantId: string,
+    paymentMethodId?: string,
+  ): Promise<Subscription> {
+    this.logger.log(`Reactivating subscription ${subscriptionId} for tenant ${tenantId}`);
+
+    // Find the subscription
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id: subscriptionId, tenantId },
+      relations: ['plan', 'tenant'],
+    });
+
+    if (!subscription) {
+      throw new BadRequestException('Subscription not found');
+    }
+
+    // Check if subscription is suspended
+    if (subscription.status !== SubscriptionStatus.SUSPENDED) {
+      throw new BadRequestException(
+        `Cannot reactivate subscription with status: ${subscription.status}`,
+      );
+    }
+
+    // Determine payment provider
+    const provider = this.determineProvider(subscription);
+    if (!provider) {
+      throw new BadRequestException('No payment provider found for subscription');
+    }
+
+    try {
+      // Calculate outstanding amount (current period + any past due amounts)
+      const outstandingAmount = subscription.plan.price;
+
+      // Process payment for outstanding amount
+      const paymentResult = await this.paymentService.processPayment(
+        provider,
+        {
+          amount: outstandingAmount,
+          currency: 'USD',
+          customerId: subscription.metadata?.customerId,
+          paymentMethodId: paymentMethodId || subscription.metadata?.paymentMethodId,
+          description: `Reactivation payment for subscription ${subscriptionId}`,
+        },
+      );
+
+      if (!paymentResult.success) {
+        throw new BadRequestException(
+          `Payment failed: ${paymentResult.error || 'Unknown error'}`,
+        );
+      }
+
+      // Calculate new end date
+      const now = new Date();
+      const newEndDate = this.calculateEndDate(now, subscription.plan.billingCycle);
+
+      // Restore subscription to active status
+      subscription.status = SubscriptionStatus.ACTIVE;
+      subscription.startDate = now;
+      subscription.endDate = newEndDate;
+      subscription.currentPeriodStart = now;
+      subscription.currentPeriodEnd = newEndDate;
+      subscription.renewalAttempts = 0;
+      subscription.gracePeriodEnd = null;
+      subscription.autoRenew = true;
+
+      await this.subscriptionRepository.save(subscription);
+
+      // Update tenant status
+      await this.updateTenantSubscription(tenantId, subscription.planId, newEndDate);
+
+      // Send reactivation confirmation email
+      await this.emailService.sendSubscriptionReactivated(subscription, newEndDate);
+
+      this.logger.log(
+        `Subscription ${subscriptionId} reactivated successfully until ${newEndDate.toISOString()}`,
+      );
+
+      return subscription;
+    } catch (error) {
+      this.logger.error(
+        `Failed to reactivate subscription ${subscriptionId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 }

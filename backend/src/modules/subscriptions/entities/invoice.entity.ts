@@ -84,6 +84,9 @@ export class Invoice {
   @Column({ nullable: true })
   razorpayInvoiceId: string;
 
+  @Column({ nullable: true })
+  pdfUrl: string;
+
   @Column({ type: 'jsonb', nullable: true })
   items: Array<{
     description: string;

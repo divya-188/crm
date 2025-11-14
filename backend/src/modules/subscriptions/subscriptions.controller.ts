@@ -62,10 +62,18 @@ export class SubscriptionsController {
       createSubscriptionDto,
     );
 
+    // Extract checkout URL from metadata if present
+    const checkoutUrl = subscription.metadata?.checkoutUrl;
+
     return {
       success: true,
-      data: subscription,
-      message: 'Subscription created successfully',
+      data: {
+        ...subscription,
+        checkoutUrl, // Include at top level for easier access
+      },
+      message: checkoutUrl 
+        ? 'Redirecting to payment checkout...' 
+        : 'Subscription created successfully',
     };
   }
 
@@ -111,9 +119,74 @@ export class SubscriptionsController {
     };
   }
 
+  @Get('invoices')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all invoices for current tenant' })
+  @ApiResponse({ status: 200, description: 'Invoices retrieved successfully' })
+  async getInvoices(@Req() req: any) {
+    const tenantId = req.user.tenantId;
+    const invoices = await this.invoiceService.getInvoicesForTenant(tenantId);
+
+    return {
+      success: true,
+      data: invoices,
+    };
+  }
+
+  @Get('invoices/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get invoice details' })
+  @ApiResponse({ status: 200, description: 'Invoice retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Invoice not found' })
+  async getInvoice(
+    @Param('id') invoiceId: string,
+    @Req() req: any,
+  ) {
+    const invoice = await this.invoiceService.getInvoice(invoiceId);
+    
+    // Verify user has access to this invoice
+    if (invoice.tenantId !== req.user.tenantId) {
+      throw new BadRequestException('Access denied to this invoice');
+    }
+
+    return {
+      success: true,
+      data: invoice,
+    };
+  }
+
+  @Get('invoices/:id/download')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Download invoice PDF' })
+  @ApiResponse({ status: 200, description: 'Invoice PDF downloaded successfully' })
+  @ApiResponse({ status: 404, description: 'Invoice not found' })
+  async downloadInvoice(
+    @Param('id') invoiceId: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const invoice = await this.invoiceService.getInvoice(invoiceId);
+    
+    // Verify user has access to this invoice
+    if (invoice.tenantId !== req.user.tenantId) {
+      throw new BadRequestException('Access denied to this invoice');
+    }
+
+    const pdfBuffer = await this.invoiceService.generateInvoicePDF(invoiceId);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=${invoice.invoiceNumber}.pdf`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    res.send(pdfBuffer);
+  }
+
   @Get(':id/invoice')
   @UseGuards(JwtAuthGuard)
-  async downloadInvoice(
+  @ApiOperation({ summary: 'Download invoice for subscription (legacy)' })
+  async downloadSubscriptionInvoice(
     @Param('id') subscriptionId: string,
     @Res() res: Response,
   ) {
@@ -131,16 +204,20 @@ export class SubscriptionsController {
   @Post('webhooks/stripe')
   @HttpCode(HttpStatus.OK)
   async handleStripeWebhook(
-    @Body() payload: any,
+    @Req() req: any,
     @Headers('stripe-signature') signature: string,
   ) {
     if (!signature) {
       throw new BadRequestException('Missing stripe signature');
     }
 
+    // Stripe requires the raw body for signature verification
+    // The body will be a Buffer when using bodyParser.raw()
+    const rawBody = req.body;
+
     await this.paymentService.handleWebhook(
       PaymentProvider.STRIPE,
-      payload,
+      rawBody,
       signature,
     );
 
@@ -253,6 +330,64 @@ export class SubscriptionsController {
     };
   }
 
+  @Post('activate')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Activate subscription after successful checkout' })
+  @ApiResponse({ status: 200, description: 'Subscription activated successfully' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async activateSubscription(
+    @Body() body: { sessionId: string },
+    @Req() req: any,
+  ) {
+    try {
+      const tenantId = req.user.tenantId;
+      
+      // Find subscription by session ID
+      const subscription = await this.subscriptionsService.findBySessionId(
+        body.sessionId,
+        tenantId,
+      );
+
+      if (!subscription) {
+        return {
+          success: false,
+          message: 'Subscription not found for this session',
+        };
+      }
+
+      // Activate the subscription
+      await this.paymentService.activateSubscription(
+        subscription.id,
+        tenantId,
+      );
+
+      return {
+        success: true,
+        message: 'Subscription activated successfully',
+        subscription,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to activate subscription',
+      };
+    }
+  }
+
+  @Get('session/:sessionId/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Check session status' })
+  @ApiResponse({ status: 200, description: 'Session status retrieved' })
+  async getSessionStatus(
+    @Param('sessionId') sessionId: string,
+    @Req() req: any,
+  ) {
+    return this.subscriptionsService.getSessionStatus(
+      sessionId,
+      req.user.tenantId,
+    );
+  }
+
   @Get('current')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get current subscription' })
@@ -277,6 +412,33 @@ export class SubscriptionsController {
     return {
       success: true,
       message: 'Get tenant subscription endpoint',
+    };
+  }
+
+  @Post(':id/reactivate')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Reactivate a suspended subscription' })
+  @ApiResponse({ status: 200, description: 'Subscription reactivated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid subscription or reactivation failed' })
+  @ApiResponse({ status: 402, description: 'Payment processing failed' })
+  @ApiResponse({ status: 403, description: 'User does not have permission to reactivate' })
+  async reactivateSubscription(
+    @Param('id') subscriptionId: string,
+    @Body() body: { paymentMethodId?: string },
+    @Req() req: any,
+  ) {
+    const tenantId = req.user.tenantId;
+    
+    const subscription = await this.lifecycleService.reactivateSubscription(
+      subscriptionId,
+      tenantId,
+      body.paymentMethodId,
+    );
+
+    return {
+      success: true,
+      data: subscription,
+      message: 'Subscription reactivated successfully',
     };
   }
 }

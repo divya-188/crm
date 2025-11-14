@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Failed - Action Required</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #ef4444; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+    .alert-box { background: #fef2f2; border-left: 4px solid #ef4444; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    .info-box { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    .info-row { padding: 10px 0; border-bottom: 1px solid #eee; }
+    .button { display: inline-block; background: #ef4444; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+    .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚠️ Payment Failed</h1>
+  </div>
+  
+  <div class="content">
+    <p>Hi {{tenantName}},</p>
+    
+    <div class="alert-box">
+      <p><strong>We were unable to process your subscription renewal payment.</strong></p>
+      <p>This is attempt <strong>{{attemptNumber}} of {{maxAttempts}}</strong>.</p>
+    </div>
+    
+    <div class="info-box">
+      <h3>Payment Details</h3>
+      <div class="info-row">
+        <strong>Plan:</strong> {{planName}}
+      </div>
+      <div class="info-row">
+        <strong>Error:</strong> {{error}}
+      </div>
+      <div class="info-row">
+        <strong>Next Retry:</strong> {{nextRetryDate}}
+      </div>
+    </div>
+    
+    <p>We will automatically retry the payment on <strong>{{nextRetryDate}}</strong>.</p>
+    
+    <p>To avoid service interruption, please update your payment method as soon as possible:</p>
+    
+    <center>
+      <a href="{{updatePaymentUrl}}" class="button">Update Payment Method</a>
+    </center>
+    
+    <p>If you need assistance or have questions about this payment failure, please contact our support team.</p>
+    
+    <p>Best regards,<br>The WhatsApp CRM Team</p>
+  </div>
+  
+  <div class="footer">
+    <p>© 2025 WhatsApp CRM. All rights reserved.</p>
+  </div>
+</body>
+</html>

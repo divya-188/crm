@@ -1,10 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as PDFDocument from 'pdfkit';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Subscription } from '../entities/subscription.entity';
 import { SubscriptionPlan } from '../entities/subscription-plan.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Invoice, InvoiceStatus } from '../entities/invoice.entity';
 
 export interface InvoiceData {
   invoiceNumber: string;
@@ -30,6 +33,7 @@ export interface InvoiceData {
 @Injectable()
 export class InvoiceService {
   private readonly logger = new Logger(InvoiceService.name);
+  private readonly invoicesDir = path.join(process.cwd(), 'invoices');
 
   constructor(
     @InjectRepository(Subscription)
@@ -38,8 +42,115 @@ export class InvoiceService {
     private planRepository: Repository<SubscriptionPlan>,
     @InjectRepository(Tenant)
     private tenantRepository: Repository<Tenant>,
-  ) {}
+    @InjectRepository(Invoice)
+    private invoiceRepository: Repository<Invoice>,
+  ) {
+    // Ensure invoices directory exists
+    if (!fs.existsSync(this.invoicesDir)) {
+      fs.mkdirSync(this.invoicesDir, { recursive: true });
+    }
+  }
 
+  /**
+   * Create invoice record and generate PDF for a subscription
+   */
+  async createInvoiceForSubscription(
+    subscriptionId: string,
+    paymentMethod: string,
+  ): Promise<Invoice> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id: subscriptionId },
+      relations: ['plan', 'tenant'],
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    const plan = subscription.plan;
+    const tenant = subscription.tenant;
+    const amount = Number(plan.price);
+    const tax = amount * 0.0; // No tax for now, can be configured
+    const total = amount + tax;
+
+    // Create invoice record
+    const invoice = this.invoiceRepository.create({
+      tenantId: tenant.id,
+      subscriptionId: subscription.id,
+      invoiceNumber: this.generateInvoiceNumber(),
+      amount,
+      tax,
+      total,
+      currency: 'USD',
+      status: InvoiceStatus.PAID,
+      invoiceDate: new Date(),
+      dueDate: new Date(),
+      paidAt: new Date(),
+      paymentMethod,
+      items: [
+        {
+          description: `${plan.name} - ${plan.billingCycle} subscription`,
+          quantity: 1,
+          unitPrice: amount,
+          total: amount,
+        },
+      ],
+    });
+
+    const savedInvoice = await this.invoiceRepository.save(invoice);
+
+    // Generate and store PDF
+    const pdfBuffer = await this.generateInvoicePDF(savedInvoice.id);
+    const pdfPath = await this.savePDF(savedInvoice.id, pdfBuffer);
+
+    // Update invoice with PDF URL
+    savedInvoice.pdfUrl = pdfPath;
+    await this.invoiceRepository.save(savedInvoice);
+
+    this.logger.log(`Invoice ${savedInvoice.invoiceNumber} created for subscription ${subscriptionId}`);
+
+    return savedInvoice;
+  }
+
+  /**
+   * Get invoice by ID
+   */
+  async getInvoice(invoiceId: string): Promise<Invoice> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoiceId },
+      relations: ['tenant', 'subscription', 'subscription.plan'],
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    return invoice;
+  }
+
+  /**
+   * Get invoices for a tenant
+   */
+  async getInvoicesForTenant(tenantId: string): Promise<Invoice[]> {
+    return this.invoiceRepository.find({
+      where: { tenantId },
+      relations: ['subscription', 'subscription.plan'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Generate PDF for an existing invoice
+   */
+  async generateInvoicePDF(invoiceId: string): Promise<Buffer> {
+    const invoice = await this.getInvoice(invoiceId);
+    const invoiceData = this.prepareInvoiceDataFromRecord(invoice);
+    return this.createPDF(invoiceData);
+  }
+
+  /**
+   * Legacy method - generates PDF without creating invoice record
+   */
   async generateInvoice(subscriptionId: string): Promise<Buffer> {
     const subscription = await this.subscriptionRepository.findOne({
       where: { id: subscriptionId },
@@ -95,6 +206,40 @@ export class InvoiceService {
     };
 
     return this.createPDF(invoiceData);
+  }
+
+  /**
+   * Prepare invoice data from invoice record
+   */
+  private prepareInvoiceDataFromRecord(invoice: Invoice): InvoiceData {
+    return {
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceDate: invoice.invoiceDate,
+      dueDate: invoice.dueDate,
+      tenant: {
+        name: invoice.tenant.name,
+        email: invoice.tenant.settings?.email || 'N/A',
+        address: invoice.tenant.settings?.address,
+      },
+      items: invoice.items || [],
+      subtotal: Number(invoice.amount),
+      tax: Number(invoice.tax),
+      total: Number(invoice.total),
+      paymentMethod: invoice.paymentMethod || 'Unknown',
+    };
+  }
+
+  /**
+   * Save PDF to filesystem
+   */
+  private async savePDF(invoiceId: string, pdfBuffer: Buffer): Promise<string> {
+    const filename = `invoice-${invoiceId}.pdf`;
+    const filepath = path.join(this.invoicesDir, filename);
+    
+    await fs.promises.writeFile(filepath, pdfBuffer);
+    
+    // Return relative path for URL
+    return `/invoices/${filename}`;
   }
 
   private async prepareInvoiceData(
@@ -245,9 +390,10 @@ export class InvoiceService {
   }
 
   private generateInvoiceNumber(): string {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000);
-    return `INV-${timestamp}-${random}`;
+    const year = new Date().getFullYear();
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `INV-${year}-${timestamp}${random}`;
   }
 
   private formatDate(date: Date): string {

@@ -57,6 +57,9 @@ export class Tenant {
   @Column({ type: 'timestamp', nullable: true })
   subscriptionEndsAt: Date;
 
+  @Column({ type: 'jsonb', nullable: true })
+  quotaWarnings: Record<string, Record<string, Date>>;
+
   @CreateDateColumn()
   createdAt: Date;
 

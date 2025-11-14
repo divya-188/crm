@@ -56,3 +56,6 @@ media/
 # Misc
 .cache/
 .parcel-cache/
+
+#document 
+*.md

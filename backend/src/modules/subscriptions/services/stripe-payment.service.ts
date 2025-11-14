@@ -35,24 +35,58 @@ export class StripePaymentService implements IPaymentService {
     paymentMethodId?: string,
   ): Promise<PaymentResult> {
     try {
+      const paymentMode = process.env.PAYMENT_MODE || 'sandbox';
+
       // Create or retrieve customer
       const customer = await this.getOrCreateCustomer(tenantId, customerEmail);
 
-      // Attach payment method if provided
-      if (paymentMethodId) {
-        await this.stripe.paymentMethods.attach(paymentMethodId, {
-          customer: customer.id,
-        });
-
-        await this.stripe.customers.update(customer.id, {
-          invoice_settings: {
-            default_payment_method: paymentMethodId,
-          },
-        });
-      }
-
       // Create or retrieve price
       const price = await this.getOrCreatePrice(planId, amount, billingCycle);
+
+      // Both sandbox and production use Checkout Session for full payment flow testing
+      if (!paymentMethodId) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        
+        const session = await this.stripe.checkout.sessions.create({
+          customer: customer.id,
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price: price.id,
+              quantity: 1,
+            },
+          ],
+          mode: 'subscription',
+          success_url: `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${frontendUrl}/subscription/cancel`,
+          metadata: {
+            tenantId,
+            planId,
+          },
+        });
+
+        return {
+          success: true,
+          subscriptionId: null, // Will be set via webhook
+          customerId: customer.id,
+          checkoutUrl: session.url,
+          metadata: {
+            sessionId: session.id,
+            status: 'pending_checkout',
+          },
+        };
+      }
+
+      // If payment method provided, use direct subscription creation
+      await this.stripe.paymentMethods.attach(paymentMethodId, {
+        customer: customer.id,
+      });
+
+      await this.stripe.customers.update(customer.id, {
+        invoice_settings: {
+          default_payment_method: paymentMethodId,
+        },
+      });
 
       // Create subscription
       const subscription = await this.stripe.subscriptions.create({
@@ -85,6 +119,7 @@ export class StripePaymentService implements IPaymentService {
 
   async cancelSubscription(subscriptionId: string): Promise<PaymentResult> {
     try {
+      // Use real Stripe API for both sandbox and production
       const subscription = await this.stripe.subscriptions.cancel(
         subscriptionId,
       );
@@ -135,6 +170,7 @@ export class StripePaymentService implements IPaymentService {
     status: string;
     currentPeriodEnd: Date;
   }> {
+    // Use real Stripe API for both sandbox and production
     const subscription = await this.stripe.subscriptions.retrieve(
       subscriptionId,
     );
@@ -203,6 +239,51 @@ export class StripePaymentService implements IPaymentService {
       },
       metadata: { planId },
     });
+  }
+
+  /**
+   * Process a one-time payment (for prorated charges, etc.)
+   */
+  async processOneTimePayment(
+    amount: number,
+    currency: string,
+    paymentMethodId?: string,
+    metadata?: Record<string, any>,
+  ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+    try {
+      // Create a payment intent for one-time payment
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: currency.toLowerCase(),
+        payment_method: paymentMethodId,
+        confirm: paymentMethodId ? true : false, // Auto-confirm if payment method provided
+        metadata: metadata || {},
+      });
+
+      if (paymentIntent.status === 'succeeded') {
+        return {
+          success: true,
+          transactionId: paymentIntent.id,
+        };
+      } else if (paymentIntent.status === 'requires_action') {
+        // Payment requires additional action (3D Secure, etc.)
+        return {
+          success: false,
+          error: 'Payment requires additional authentication',
+        };
+      } else {
+        return {
+          success: false,
+          error: `Payment status: ${paymentIntent.status}`,
+        };
+      }
+    } catch (error) {
+      this.logger.error('Stripe one-time payment failed', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
   }
 
   private mapBillingCycle(cycle: string): string {

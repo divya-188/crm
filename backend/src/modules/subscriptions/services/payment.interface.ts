@@ -5,6 +5,9 @@ export interface PaymentResult {
   checkoutUrl?: string;
   error?: string;
   metadata?: Record<string, any>;
+  transactionId?: string;
+  amount?: number;
+  currency?: string;
 }
 
 export interface WebhookVerificationResult {

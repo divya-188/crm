@@ -42,6 +42,7 @@ import {
 // Admin Pages
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import Tenants from '@/pages/admin/Tenants';
+import AdminSubscriptionPlans from '@/pages/admin/SubscriptionPlans';
 
 // Super Admin Pages
 import { SuperAdminDashboard } from '@/pages/super-admin/SuperAdminDashboard';
@@ -50,10 +51,39 @@ import SubscriptionPlans from '@/pages/super-admin/SubscriptionPlans';
 // Agent Pages
 import { AgentDashboard } from '@/pages/agent/AgentDashboard';
 
+// Subscription Pages
+import SubscriptionSuccess from '@/pages/subscription/SubscriptionSuccess';
+import SubscriptionCancel from '@/pages/subscription/SubscriptionCancel';
+import MySubscription from '@/pages/MySubscription';
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Navigate to="/dashboard" replace />,
+  },
+  {
+    path: '/subscription/success',
+    element: (
+      <ProtectedRoute>
+        <SubscriptionSuccess />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/subscription/cancel',
+    element: (
+      <ProtectedRoute>
+        <SubscriptionCancel />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/my-subscription',
+    element: (
+      <ProtectedRoute>
+        <MySubscription />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/auth',
@@ -237,7 +267,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'plans',
-        element: <SubscriptionPlans />,
+        element: <AdminSubscriptionPlans />,
       },
       {
         path: 'analytics',
