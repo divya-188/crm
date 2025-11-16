@@ -243,42 +243,52 @@ export class StripePaymentService implements IPaymentService {
 
   /**
    * Process a one-time payment (for prorated charges, etc.)
+   * Creates a Checkout Session for user to complete payment
    */
   async processOneTimePayment(
     amount: number,
     currency: string,
     paymentMethodId?: string,
     metadata?: Record<string, any>,
-  ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  ): Promise<{ success: boolean; checkoutUrl?: string; transactionId?: string; error?: string }> {
     try {
-      // Create a payment intent for one-time payment
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
-        currency: currency.toLowerCase(),
-        payment_method: paymentMethodId,
-        confirm: paymentMethodId ? true : false, // Auto-confirm if payment method provided
+      this.logger.log(`🔵 [STRIPE] Creating checkout session for one-time payment`);
+      this.logger.log(`💰 [STRIPE] Amount: ${amount} ${currency}`);
+      this.logger.log(`📦 [STRIPE] Metadata: ${JSON.stringify(metadata)}`);
+
+      // Create a Checkout Session for one-time payment
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: {
+                name: metadata?.description || 'Plan Upgrade',
+                description: `Prorated charge for plan upgrade`,
+              },
+              unit_amount: Math.round(amount * 100), // Convert to cents
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.FRONTEND_URL}/subscription/plans`,
         metadata: metadata || {},
+        client_reference_id: metadata?.subscriptionId || metadata?.tenantId,
       });
 
-      if (paymentIntent.status === 'succeeded') {
-        return {
-          success: true,
-          transactionId: paymentIntent.id,
-        };
-      } else if (paymentIntent.status === 'requires_action') {
-        // Payment requires additional action (3D Secure, etc.)
-        return {
-          success: false,
-          error: 'Payment requires additional authentication',
-        };
-      } else {
-        return {
-          success: false,
-          error: `Payment status: ${paymentIntent.status}`,
-        };
-      }
+      this.logger.log(`✅ [STRIPE] Checkout session created: ${session.id}`);
+      this.logger.log(`🔗 [STRIPE] Checkout URL: ${session.url}`);
+
+      return {
+        success: true,
+        checkoutUrl: session.url,
+        transactionId: session.id,
+      };
     } catch (error) {
-      this.logger.error('Stripe one-time payment failed', error);
+      this.logger.error('❌ [STRIPE] One-time payment checkout creation failed', error);
       return {
         success: false,
         error: error.message,
