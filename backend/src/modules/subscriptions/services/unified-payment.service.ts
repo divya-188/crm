@@ -269,6 +269,9 @@ export class UnifiedPaymentService {
 
     try {
       if (provider === PaymentProvider.STRIPE) {
+        this.logger.log(`🔵 [UNIFIED-PAYMENT] Calling Stripe service for one-time payment`);
+        this.logger.log(`🔵 [UNIFIED-PAYMENT] Amount: ${amount}, Currency: USD`);
+        
         const result = await this.stripeService.processOneTimePayment(
           amount,
           'USD',
@@ -276,9 +279,20 @@ export class UnifiedPaymentService {
           metadata,
         );
         
-        this.logger.log(
-          `One-time payment successful for tenant ${tenantId}. Transaction ID: ${result.transactionId}`,
-        );
+        this.logger.log(`🔵 [UNIFIED-PAYMENT] Stripe service returned:`);
+        this.logger.log(`🔵 [UNIFIED-PAYMENT] Result: ${JSON.stringify(result)}`);
+        this.logger.log(`🔵 [UNIFIED-PAYMENT] Success: ${result.success}`);
+        this.logger.log(`🔵 [UNIFIED-PAYMENT] Checkout URL: ${result.checkoutUrl}`);
+        this.logger.log(`🔵 [UNIFIED-PAYMENT] Transaction ID: ${result.transactionId}`);
+        
+        if (!result.success) {
+          this.logger.error(`❌ [UNIFIED-PAYMENT] Stripe payment failed: ${result.error}`);
+          throw new BadRequestException(`Stripe payment failed: ${result.error}`);
+        }
+        
+        if (!result.checkoutUrl) {
+          this.logger.warn(`⚠️ [UNIFIED-PAYMENT] No checkout URL in result!`);
+        }
         
         return result;
       } else if (provider === PaymentProvider.RAZORPAY) {
