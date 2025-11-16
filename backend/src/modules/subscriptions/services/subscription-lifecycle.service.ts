@@ -186,6 +186,7 @@ export class SubscriptionLifecycleService {
 
     // Process prorated payment if amount > 0
     let checkoutUrl: string | undefined;
+    let sessionId: string | undefined;
     if (proratedAmount > 0) {
       try {
         // Get tenant email for payment link
@@ -229,10 +230,13 @@ export class SubscriptionLifecycleService {
         );
         
         checkoutUrl = paymentResult.checkoutUrl;
+        sessionId = paymentResult.transactionId; // Store the Stripe session ID
 
         this.logger.log(`✅ [UPGRADE] Payment link created: ${checkoutUrl}`);
+        this.logger.log(`🔑 [UPGRADE] Session ID: ${sessionId}`);
         console.log(`✅ [UPGRADE-PAYMENT] Payment link created successfully`);
         console.log(`🔗 [UPGRADE-PAYMENT] Checkout URL: ${checkoutUrl}`);
+        console.log(`🔑 [UPGRADE-PAYMENT] Session ID: ${sessionId}`);
       } catch (error) {
         this.logger.error(`❌ [UPGRADE] Payment link creation failed: ${error.message}`);
         throw new BadRequestException(
@@ -249,6 +253,7 @@ export class SubscriptionLifecycleService {
     subscription.metadata = {
       ...subscription.metadata,
       previousPlanId,
+      sessionId, // Store session ID for activation lookup
       upgradeIntent: {
         newPlanId,
         proratedAmount,
