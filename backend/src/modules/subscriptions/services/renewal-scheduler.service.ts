@@ -375,13 +375,21 @@ export class RenewalSchedulerService {
     subscription.gracePeriodEnd = null;
     subscription.renewalReminders = []; // Reset reminders for next cycle
 
+    // Reset quota warnings for the new billing period
+    subscription.metadata = {
+      ...subscription.metadata,
+      quotaWarningsSent: {}, // Clear all quota warnings
+      quotaResetAt: new Date().toISOString(),
+      quotaResetReason: 'renewal',
+    };
+
     await this.subscriptionRepository.save(subscription);
 
     // Send success email
     await this.emailService.sendRenewalSuccess(subscription, newEndDate);
 
     this.logger.log(
-      `Subscription ${subscription.id} renewed until ${newEndDate.toISOString()}`,
+      `Subscription ${subscription.id} renewed until ${newEndDate.toISOString()}. Quota warnings reset.`,
     );
   }
 

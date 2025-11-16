@@ -13,6 +13,12 @@ async function bootstrap() {
     bodyParser.raw({ type: 'application/json' }),
   );
 
+  // Configure raw body parsing for Razorpay webhooks
+  app.use(
+    '/api/v1/subscriptions/webhooks/razorpay',
+    bodyParser.raw({ type: 'application/json' }),
+  );
+
   // Global prefix
   app.setGlobalPrefix('api/v1');
 

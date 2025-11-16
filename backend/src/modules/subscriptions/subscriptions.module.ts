@@ -18,6 +18,7 @@ import { InvoiceService } from './services/invoice.service';
 import { SubscriptionLifecycleService } from './services/subscription-lifecycle.service';
 import { RenewalSchedulerService } from './services/renewal-scheduler.service';
 import { EmailNotificationService } from './services/email-notification.service';
+import { QuotaResetService } from './services/quota-reset.service';
 import { Contact } from '../contacts/entities/contact.entity';
 import { User } from '../users/entities/user.entity';
 import { Conversation } from '../conversations/entities/conversation.entity';
@@ -58,6 +59,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     SubscriptionLifecycleService,
     RenewalSchedulerService,
     EmailNotificationService,
+    QuotaResetService,
   ],
   exports: [
     SubscriptionPlansService,

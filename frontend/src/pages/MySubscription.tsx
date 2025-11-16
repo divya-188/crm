@@ -15,7 +15,8 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { subscriptionsService } from '@/services/subscriptions.service';
 import { subscriptionPlansService } from '@/services/subscription-plans.service';
-import toast from '@/lib/toast';
+import { paymentConfigService } from '@/services/payment-config.service';
+import { showToast } from '@/lib/toast';
 import CurrentPlanTab from '@/components/subscription/CurrentPlanTab';
 import InvoicesTab from '@/components/subscription/InvoicesTab';
 import ComparePlansTab from '@/components/subscription/ComparePlansTab';
@@ -29,6 +30,7 @@ export default function MySubscription() {
   const [plans, setPlans] = useState<any[]>([]);
   const [usage, setUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentProvider, setPaymentProvider] = useState<string>('stripe');
 
   useEffect(() => {
     loadData();
@@ -37,21 +39,23 @@ export default function MySubscription() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [subData, invoicesData, plansData, usageData] = await Promise.all([
-        subscriptionsService.getCurrentSubscription(),
-        subscriptionsService.getInvoices(),
-        subscriptionPlansService.getPlans(),
-        subscriptionsService.getUsage(),
+      const [subData, invoicesData, plansData, usageData, paymentConfig] = await Promise.all([
+        subscriptionsService.getCurrentSubscription().catch(() => null),
+        subscriptionsService.getInvoices().catch(() => []),
+        subscriptionPlansService.getAll(false),
+        subscriptionsService.getUsage().catch(() => null),
+        paymentConfigService.getConfig().catch(() => ({ defaultProvider: 'stripe', paymentMode: 'sandbox', availableProviders: ['stripe'] })),
       ]);
       
       setCurrentSubscription(subData);
       setInvoices(invoicesData);
       setPlans(plansData.filter((p: any) => p.id !== subData?.plan?.id));
       setUsage(usageData);
+      setPaymentProvider(paymentConfig.defaultProvider);
     } catch (error: any) {
-      if (error.message !== 'No active subscription found') {
-        toast.error('Failed to load subscription data');
-      }
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load subscription data';
+      showToast.error(errorMessage, 'Loading Failed');
+      console.error('Load data error:', error);
     } finally {
       setLoading(false);
     }
@@ -79,33 +83,83 @@ export default function MySubscription() {
   const handleDownloadInvoice = async (invoiceId: string) => {
     try {
       await subscriptionsService.downloadInvoice(invoiceId);
-      toast.success('Invoice downloaded successfully');
-    } catch (error) {
-      toast.error('Failed to download invoice');
+      showToast.success('Invoice downloaded successfully', 'Success');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to download invoice';
+      showToast.error(errorMessage, 'Download Failed');
+      console.error('Download invoice error:', error);
+    }
+  };
+
+  // Handler for creating new subscriptions
+  const handleSubscribe = async (planId: string) => {
+    try {
+      const result = await subscriptionsService.createSubscription({
+        planId,
+        paymentProvider: paymentProvider as any,
+      });
+      if (result?.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      } else {
+        showToast.success('Subscription created successfully', 'Success');
+        loadData();
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to create subscription';
+      showToast.error(errorMessage, 'Subscription Failed');
+      console.error('Subscribe error:', error);
     }
   };
 
   const handleUpgrade = async (planId: string) => {
     try {
-      const result = await subscriptionsService.upgradePlan(currentSubscription.id, planId);
-      if (result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
+      console.log('🚀 [UPGRADE] Starting upgrade process');
+      console.log('🚀 [UPGRADE] Subscription ID:', currentSubscription.id);
+      console.log('🚀 [UPGRADE] New Plan ID:', planId);
+      console.log('🚀 [UPGRADE] Payment Provider:', paymentProvider);
+      
+      const result = await subscriptionsService.upgradePlan(
+        currentSubscription.id,
+        planId,
+        paymentProvider
+      );
+      
+      console.log('✅ [UPGRADE] API Response received:', JSON.stringify(result, null, 2));
+      
+      // Check for checkout URL in the response
+      const checkoutUrl = result?.data?.checkoutUrl || result?.checkoutUrl;
+      
+      console.log('🔍 [UPGRADE] Extracted checkout URL:', checkoutUrl);
+      console.log('🔍 [UPGRADE] result.data:', result?.data);
+      console.log('🔍 [UPGRADE] result.checkoutUrl:', result?.checkoutUrl);
+      
+      if (checkoutUrl) {
+        console.log('✅ [UPGRADE] Checkout URL found! Redirecting to:', checkoutUrl);
+        // Redirect to payment gateway
+        window.location.href = checkoutUrl;
       } else {
-        toast.success('Plan upgraded successfully');
+        console.log('⚠️ [UPGRADE] No checkout URL found. Showing success message.');
+        console.log('⚠️ [UPGRADE] Full result object:', result);
+        showToast.success('Plan upgraded successfully', 'Success');
         loadData();
       }
-    } catch (error) {
-      toast.error('Failed to upgrade plan');
+    } catch (error: any) {
+      console.error('❌ [UPGRADE] Error occurred:', error);
+      console.error('❌ [UPGRADE] Error response:', error?.response);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to upgrade plan';
+      showToast.error(errorMessage, 'Upgrade Failed');
     }
   };
 
   const handleSwitch = async (planId: string) => {
     try {
       await subscriptionsService.downgradePlan(currentSubscription.id, planId);
-      toast.success('Plan will be switched at the end of billing period');
+      showToast.success('Plan will be switched at the end of billing period', 'Success');
       loadData();
-    } catch (error) {
-      toast.error('Failed to switch plan');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to switch plan';
+      showToast.error(errorMessage, 'Plan Switch Failed');
+      console.error('Switch plan error:', error);
     }
   };
 
@@ -166,6 +220,7 @@ export default function MySubscription() {
               plans={plans}
               currentPlan={currentSubscription?.plan}
               loading={loading}
+              onSubscribe={handleSubscribe}
               onUpgrade={handleUpgrade}
               onSwitch={handleSwitch}
             />

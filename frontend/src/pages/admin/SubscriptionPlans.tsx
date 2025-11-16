@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, FileText, TrendingUp as ComparePlans } from 'lucide-react';
 import { subscriptionPlansService, SubscriptionPlan } from '@/services/subscription-plans.service';
 import { subscriptionsService } from '@/services/subscriptions.service';
+import { paymentConfigService } from '@/services/payment-config.service';
 import toast from '@/lib/toast';
 import CurrentPlanTab from '../../components/subscription/CurrentPlanTab';
 import InvoicesTab from '../../components/subscription/InvoicesTab';
@@ -26,6 +27,7 @@ export default function AdminSubscriptionPlans() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [usage, setUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentProvider, setPaymentProvider] = useState<string>('stripe');
 
   useEffect(() => {
     loadData();
@@ -34,39 +36,41 @@ export default function AdminSubscriptionPlans() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      const [plansResponse, invoicesResponse, usageResponse] = await Promise.all([
+
+      const [plansResponse, invoicesResponse, usageData, paymentConfig] = await Promise.all([
         subscriptionPlansService.getAll(),
-        subscriptionsService.getInvoices().catch(() => ({ data: { data: [] } })),
-        subscriptionsService.getUsage().catch(() => ({ data: null })),
+        subscriptionsService.getInvoices().catch(() => []),
+        subscriptionsService.getUsage().catch(() => null),
+        paymentConfigService.getConfig().catch(() => ({ defaultProvider: 'stripe', paymentMode: 'sandbox', availableProviders: ['stripe'] })),
       ]);
-      
+
       console.log('📊 Raw API Responses:', {
         plansResponse,
         invoicesResponse,
-        usageResponse
+        usageData
       });
-      
+
       // plansResponse is already extracted by the service
       const plans = Array.isArray(plansResponse) ? plansResponse : [];
       console.log('📋 Extracted plans:', plans);
       setPlans(plans.sort((a: SubscriptionPlan, b: SubscriptionPlan) => a.sortOrder - b.sortOrder));
-      
-      // Extract invoices - API returns { success: true, data: [...] }
-      const invoicesData = invoicesResponse?.data?.data || invoicesResponse?.data || [];
-      console.log('📄 Extracted invoices:', invoicesData);
-      setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
-      
-      // Extract usage data
-      const usageData = usageResponse?.data || null;
+
+      // invoicesResponse contains {success: true, data: [...]}
+      const invoicesData = invoicesResponse?.data || invoicesResponse || [];
+      const invoices = Array.isArray(invoicesData) ? invoicesData : [];
+      console.log('📄 Extracted invoices:', invoices);
+      setInvoices(invoices);
+
+      // usageData is already extracted by the service
+      console.log('📈 Usage data:', usageData);
       setUsage(usageData);
       
+      // Set payment provider from config
+      setPaymentProvider(paymentConfig.defaultProvider);
+
       try {
-        const subResponse = await subscriptionsService.getCurrentSubscription();
-        console.log('💳 Current subscription response:', subResponse);
-        // Extract subscription data from Axios response
-        const subscriptionData = subResponse?.data || null;
-        console.log('💳 Extracted subscription:', subscriptionData);
+        const subscriptionData = await subscriptionsService.getCurrentSubscription();
+        console.log('💳 Current subscription:', subscriptionData);
         setCurrentSubscription(subscriptionData as any);
       } catch (error: any) {
         if (error.response?.status !== 404) {
@@ -81,6 +85,26 @@ export default function AdminSubscriptionPlans() {
     }
   };
 
+  const handleSubscribe = async (planId: string) => {
+    try {
+      const response = await subscriptionsService.createSubscription({
+        planId,
+        paymentProvider: paymentProvider as any
+      });
+
+      const checkoutUrl = response.data?.checkoutUrl || response.data?.data?.checkoutUrl;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        toast.success('Subscription created successfully');
+        loadData();
+      }
+    } catch (error) {
+      toast.error('Failed to subscribe to plan');
+    }
+  };
+
+
   const handleDownloadInvoice = async (invoiceId: string) => {
     try {
       await subscriptionsService.downloadInvoice(invoiceId);
@@ -93,19 +117,40 @@ export default function AdminSubscriptionPlans() {
   const handleUpgradePlan = async (planId: string) => {
     if (!currentSubscription) return;
     try {
+      console.log('🚀 [ADMIN UPGRADE] Starting upgrade process');
+      console.log('🚀 [ADMIN UPGRADE] Subscription ID:', currentSubscription.id);
+      console.log('🚀 [ADMIN UPGRADE] New Plan ID:', planId);
+      console.log('🚀 [ADMIN UPGRADE] Payment Provider:', paymentProvider);
+      
       const response = await subscriptionsService.upgradeSubscription(currentSubscription.id, {
         newPlanId: planId,
-        paymentProvider: 'stripe',
+        paymentProvider: paymentProvider, // Use state instead of hardcoded 'stripe'
       });
-      const checkoutUrl = response.data?.data?.checkoutUrl || response.data?.checkoutUrl;
+      
+      console.log('✅ [ADMIN UPGRADE] API Response:', JSON.stringify(response, null, 2));
+      
+      // Check multiple possible locations for checkoutUrl
+      const checkoutUrl = 
+        response.data?.data?.metadata?.checkoutUrl || 
+        response.data?.data?.checkoutUrl || 
+        response.data?.checkoutUrl;
+      
+      console.log('🔍 [ADMIN UPGRADE] Extracted checkout URL:', checkoutUrl);
+      console.log('🔍 [ADMIN UPGRADE] Full response.data.data:', response.data?.data);
+      
       if (checkoutUrl) {
+        console.log('✅ [ADMIN UPGRADE] Redirecting to:', checkoutUrl);
+        toast.success('Redirecting to payment page...');
         window.location.href = checkoutUrl;
       } else {
+        console.log('⚠️ [ADMIN UPGRADE] No checkout URL found, showing success');
         toast.success('Plan upgraded successfully');
         loadData();
       }
-    } catch (error) {
-      toast.error('Failed to upgrade plan');
+    } catch (error: any) {
+      console.error('❌ [ADMIN UPGRADE] Error:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to upgrade plan';
+      toast.error(errorMessage);
     }
   };
 
@@ -142,7 +187,7 @@ export default function AdminSubscriptionPlans() {
 
   // Filter out current plan from comparison
   const plansForComparison = plans.filter(p => p.id !== currentSubscription?.plan?.id);
-  
+
   console.log('🎯 Plans for comparison:', {
     allPlans: plans,
     currentPlanId: currentSubscription?.plan?.id,
@@ -170,11 +215,10 @@ export default function AdminSubscriptionPlans() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                  activeTab === tab.id
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${activeTab === tab.id
                     ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg'
                     : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <Icon className="w-5 h-5" />
                 <span>{tab.label}</span>
@@ -203,12 +247,13 @@ export default function AdminSubscriptionPlans() {
         {activeTab === 'plans' && (
           <ComparePlansTab
             plans={plansForComparison}
-              currentPlan={currentSubscription?.plan}
-              loading={false}
-              onUpgrade={handleUpgradePlan}
-              onSwitch={handleSwitchPlan}
-            />
-          )}
+            currentPlan={currentSubscription?.plan}
+            loading={false}
+            onSubscribe={handleSubscribe}       // ← MISSING FIX
+            onUpgrade={handleUpgradePlan}
+            onSwitch={handleSwitchPlan}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

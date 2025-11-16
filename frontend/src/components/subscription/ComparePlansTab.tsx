@@ -23,14 +23,17 @@ interface ComparePlansTabProps {
   plans: any[];
   currentPlan: any;
   loading: boolean;
+  onSubscribe: (planId: string) => void;
   onUpgrade: (planId: string) => void;
   onSwitch: (planId: string) => void;
 }
 
+// Component for comparing subscription plans with subscribe/upgrade/switch actions
 export default function ComparePlansTab({
   plans,
   currentPlan,
   loading,
+  onSubscribe,
   onUpgrade,
   onSwitch,
 }: ComparePlansTabProps) {
@@ -292,7 +295,15 @@ export default function ComparePlansTab({
                       className="relative mb-6 group/button"
                     >
                       <Button
-                        onClick={() => upgrade ? onUpgrade(plan.id) : onSwitch(plan.id)}
+                        onClick={() => {
+                          if (!currentPlan) {
+                            onSubscribe(plan.id);
+                          } else if (upgrade) {
+                            onUpgrade(plan.id);
+                          } else {
+                            onSwitch(plan.id);
+                          }
+                        }}
                         className={`relative w-full h-10 rounded-lg font-medium text-sm shadow-sm transition-all ${
                           isPopular
                             ? 'bg-violet-600 hover:bg-violet-700 text-white'
@@ -300,14 +311,19 @@ export default function ComparePlansTab({
                         }`}
                       >
                         <span className="flex items-center justify-center gap-1.5">
-                          {upgrade ? (
+                          {!currentPlan ? (
+                            <>
+                              Subscribe
+                              <ArrowRight className="w-4 h-4" />
+                            </>
+                          ) : upgrade ? (
                             <>
                               Upgrade Now
                               <ArrowRight className="w-4 h-4" />
                             </>
                           ) : (
                             <>
-                              Get Started
+                              Switch Plan
                               <ArrowRight className="w-4 h-4" />
                             </>
                           )}

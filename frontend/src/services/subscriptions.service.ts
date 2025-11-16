@@ -2,11 +2,13 @@ import apiClient from '../lib/api-client';
 
 export const subscriptionsService = {
   getCurrentSubscription: async () => {
-    return apiClient.get('/subscriptions/current');
+    const response = await apiClient.get('/subscriptions/current');
+    return response.data;
   },
 
   getUsageStatistics: async () => {
-    return apiClient.get('/subscriptions/usage');
+    const response = await apiClient.get('/subscriptions/usage');
+    return response.data;
   },
 
   createSubscription: async (data: {
@@ -14,7 +16,8 @@ export const subscriptionsService = {
     paymentProvider: string;
     paymentMethodId?: string;
   }) => {
-    return apiClient.post('/subscriptions', data);
+    const response = await apiClient.post('/subscriptions', data);
+    return response.data;
   },
 
   renewSubscription: async (subscriptionId: string) => {
@@ -61,45 +64,84 @@ export const subscriptionsService = {
   },
 
   getInvoices: async () => {
-    return apiClient.get('/subscriptions/invoices');
+    const response = await apiClient.get('/subscriptions/invoices');
+    return response.data;
   },
 
   getInvoice: async (invoiceId: string) => {
-    return apiClient.get(`/subscriptions/invoices/${invoiceId}`);
+    const response = await apiClient.get(`/subscriptions/invoices/${invoiceId}`);
+    return response.data;
   },
 
   downloadInvoice: async (invoiceId: string) => {
-    const response = await apiClient.get(`/subscriptions/invoices/${invoiceId}/download`, {
-      responseType: 'blob',
-    });
-    
-    // Create download link
-    const url = window.URL.createObjectURL(new Blob([response]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `invoice-${invoiceId}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-    
-    return response;
+    try {
+      const response = await apiClient.get(`/subscriptions/invoices/${invoiceId}/download`, {
+        responseType: 'blob',
+      });
+      
+      // The response.data contains the blob
+      const blob = response.data || response;
+      
+      // Verify it's a valid blob
+      if (!(blob instanceof Blob)) {
+        throw new Error('Invalid response format');
+      }
+      
+      // Check if blob is not empty
+      if (blob.size === 0) {
+        throw new Error('Received empty file');
+      }
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${invoiceId}.pdf`);
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      return response;
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      throw new Error('Failed to download invoice. Please try again.');
+    }
   },
 
   getUsage: async () => {
-    return apiClient.get('/subscriptions/usage');
+    const response = await apiClient.get('/subscriptions/usage');
+    return response.data;
   },
 
-  upgradePlan: async (subscriptionId: string, newPlanId: string) => {
-    return apiClient.patch(`/subscriptions/${subscriptionId}/upgrade`, {
+  upgradePlan: async (subscriptionId: string, newPlanId: string, paymentProvider?: string) => {
+    // Get payment provider from config if not provided
+    const provider = paymentProvider || localStorage.getItem('paymentProvider') || 'razorpay';
+    
+    console.log('📡 [API] Calling upgrade endpoint');
+    console.log('📡 [API] URL:', `/subscriptions/${subscriptionId}/upgrade`);
+    console.log('📡 [API] Payload:', { newPlanId, paymentProvider: provider });
+    
+    const response = await apiClient.patch(`/subscriptions/${subscriptionId}/upgrade`, {
       newPlanId,
-      paymentProvider: 'stripe',
+      paymentProvider: provider,
     });
+    
+    console.log('📡 [API] Response status:', response.status);
+    console.log('📡 [API] Response data:', JSON.stringify(response.data, null, 2));
+    
+    return response.data;
   },
 
   downgradePlan: async (subscriptionId: string, newPlanId: string) => {
-    return apiClient.patch(`/subscriptions/${subscriptionId}/downgrade`, {
+    const response = await apiClient.patch(`/subscriptions/${subscriptionId}/downgrade`, {
       newPlanId,
     });
+    return response.data;
   },
 };

@@ -19,7 +19,7 @@ export class CreateSubscriptionDto {
 
   @IsString()
   @IsOptional()
-  paymentToken?: string; // For PayPal/Razorpay
+  paymentToken?: string; // For PayPal
 
   @IsObject()
   @IsOptional()

@@ -186,4 +186,44 @@ export class SubscriptionsService {
       },
     };
   }
+
+  /**
+   * Get subscription by tenant ID (any status including pending)
+   * Used for checking if a tenant has any subscription
+   */
+  async getSubscriptionByTenant(tenantId: string) {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { tenantId },
+      relations: ['plan'],
+      order: { createdAt: 'DESC' }, // Get the most recent subscription
+    });
+
+    return subscription;
+  }
+
+  /**
+   * Find subscription by ID
+   * Used for direct subscription lookups with authorization checks
+   */
+  async findById(subscriptionId: string) {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { id: subscriptionId },
+      relations: ['plan'],
+    });
+
+    return subscription;
+  }
+
+  /**
+   * Find subscription by Razorpay subscription ID
+   * Used for Razorpay payment callbacks and webhooks
+   */
+  async findByRazorpayId(razorpaySubscriptionId: string) {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { razorpaySubscriptionId },
+      relations: ['plan'],
+    });
+
+    return subscription;
+  }
 }

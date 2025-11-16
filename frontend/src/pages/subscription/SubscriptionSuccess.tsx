@@ -15,44 +15,132 @@ import {
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import toast from '@/lib/toast';
+import { useAuthStore } from '@/lib/auth.store';
 
 export default function SubscriptionSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(6);
-  const sessionId = searchParams.get('session_id');
+  const [countdown, setCountdown] = useState(15); // Increased from 6 to 15 seconds
+  
+  // Support multiple payment providers
+  const sessionId = searchParams.get('session_id'); // Stripe
+  const subscriptionId = searchParams.get('subscription_id'); // Razorpay subscription ID
+  const dbSubscriptionId = searchParams.get('db_subscription_id'); // Database subscription ID (for upgrades)
+  const razorpayPaymentId = searchParams.get('razorpay_payment_id'); // Razorpay redirect
+  const razorpayPaymentLinkId = searchParams.get('razorpay_payment_link_id'); // Razorpay redirect
+  const provider = searchParams.get('provider') || 'razorpay'; // Default to razorpay since that's what we're using
+  const tenantId = searchParams.get('tenant_id');
 
   useEffect(() => {
     const activateSubscription = async () => {
-      if (!sessionId) {
+      // Check if we have any payment identifier
+      if (!sessionId && !subscriptionId && !razorpayPaymentId) {
         setLoading(false);
-        toast.error('No session ID found. Please contact support.');
+        toast.error('No payment information found. Please contact support.');
+        console.error('Missing payment identifiers:', { sessionId, subscriptionId, razorpayPaymentId });
         return;
       }
+      
+      console.log('🎉 Payment Success Page Loaded');
+      console.log('📋 URL Parameters:', {
+        sessionId,
+        subscriptionId,
+        dbSubscriptionId,
+        razorpayPaymentId,
+        razorpayPaymentLinkId,
+        provider,
+        tenantId
+      });
 
       try {
-        // Activate the subscription
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/v1/subscriptions/activate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ sessionId }),
-        });
-
-        const result = await response.json();
+        // Get token from auth store
+        const token = useAuthStore.getState().accessToken;
         
-        if (result.success) {
-          toast.success('🎉 Payment successful! Your subscription is now active.');
-        } else {
-          toast.error('Payment completed, but subscription activation is pending. Please refresh the page.');
+        if (!token) {
+          console.warn('⚠️ No auth token found - user might need to login again');
+          toast.warning('Please login again to complete activation');
+          setLoading(false);
+          return;
+        }
+        
+        console.log('🔑 Token found:', token ? 'Yes' : 'No');
+        
+        // For Razorpay, payment is handled by webhook automatically
+        // We just need to show success and let the webhook activate the subscription
+        if ((provider === 'razorpay' || razorpayPaymentId) && (subscriptionId || dbSubscriptionId || razorpayPaymentLinkId)) {
+          console.log('✅ Razorpay payment detected - activating subscription');
+          
+          // Use database subscription ID if available (for upgrades), otherwise use Razorpay subscription ID
+          const activationSubId = dbSubscriptionId || subscriptionId;
+          
+          // Try to activate if we have subscription ID
+          if (activationSubId) {
+            try {
+              console.log('🔄 Calling activation API...');
+              console.log('📡 Activation Subscription ID:', activationSubId);
+              console.log('📡 Is Upgrade (using DB ID):', !!dbSubscriptionId);
+              console.log('📡 Payment ID:', razorpayPaymentId);
+              
+              // Use the API client base URL (already includes /api/v1)
+              const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+              const response = await fetch(`${apiBaseUrl}/subscriptions/${activationSubId}/activate-razorpay`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                  subscriptionId: activationSubId,
+                  tenantId,
+                  razorpayPaymentId,
+                  razorpayPaymentLinkId,
+                }),
+              });
+
+              console.log('📡 Response status:', response.status);
+              const result = await response.json();
+              console.log('📡 Response data:', result);
+              
+              if (result.success || response.ok) {
+                console.log('✅ Subscription activated successfully');
+                toast.success('🎉 Payment successful! Your subscription is now active.');
+              } else {
+                console.log('⚠️ Activation pending - webhook will handle it');
+                toast.success('🎉 Payment successful! Your subscription will be activated shortly.');
+              }
+            } catch (error) {
+              console.log('⚠️ Activation API failed - webhook will handle it:', error);
+              toast.success('🎉 Payment successful! Your subscription will be activated shortly.');
+            }
+          } else {
+            // No subscription ID, but payment was successful
+            console.log('✅ Payment successful - webhook will activate subscription');
+            toast.success('🎉 Payment successful! Your subscription will be activated shortly.');
+          }
+        } else if (sessionId) {
+          // Stripe activation
+          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+          const response = await fetch(`${apiBaseUrl}/subscriptions/activate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ sessionId }),
+          });
+
+          const result = await response.json();
+          
+          if (result.success) {
+            toast.success('🎉 Payment successful! Your subscription is now active.');
+          } else {
+            toast.warning('Payment completed. Your subscription will be activated shortly.');
+          }
         }
       } catch (error) {
         console.error('Failed to activate subscription:', error);
-        toast.error('Payment completed, but subscription activation is pending. Please refresh the page.');
+        // Don't show error - payment was successful, webhook will handle activation
+        toast.success('🎉 Payment successful! Your subscription will be activated shortly.');
       } finally {
         setLoading(false);
       }
@@ -67,7 +155,7 @@ export default function SubscriptionSuccess() {
     const countdownInterval = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          navigate('/admin/dashboard');
+          navigate('/admin/plans');
           return 0;
         }
         return prev - 1;
@@ -78,7 +166,7 @@ export default function SubscriptionSuccess() {
       clearTimeout(timer);
       clearInterval(countdownInterval);
     };
-  }, [sessionId, navigate]);
+  }, [sessionId, subscriptionId, razorpayPaymentId, razorpayPaymentLinkId, provider, tenantId, navigate]);
 
   const handleContinue = () => {
     navigate('/admin/subscription-plans');
@@ -347,7 +435,7 @@ export default function SubscriptionSuccess() {
           </motion.div>
         </motion.div>
 
-        {sessionId && (
+        {(sessionId || razorpayPaymentId) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -359,7 +447,7 @@ export default function SubscriptionSuccess() {
               Transaction Details
             </p>
             <p className="text-xs font-mono text-gray-600 break-all bg-white px-4 py-3 rounded-lg border border-gray-200">
-              {sessionId}
+              {sessionId || razorpayPaymentId}
             </p>
           </motion.div>
         )}
