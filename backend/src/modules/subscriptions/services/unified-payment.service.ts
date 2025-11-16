@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Subscription, SubscriptionStatus } from '../entities/subscription.entity';
+import { Subscription, SubscriptionStatus, SubscriptionStatusType } from '../entities/subscription.entity';
 import { SubscriptionPlan } from '../entities/subscription-plan.entity';
 import { Invoice, InvoiceStatus } from '../entities/invoice.entity';
 import { StripePaymentService } from './stripe-payment.service';
@@ -189,6 +189,7 @@ export class UnifiedPaymentService {
     provider: PaymentProvider,
     payload: any,
     signature: string,
+    rawBody?: Buffer | string, // Optional raw body for providers that need it
   ): Promise<void> {
     const paymentService = this.paymentServices.get(provider);
     if (!paymentService) {
@@ -196,6 +197,7 @@ export class UnifiedPaymentService {
     }
 
     const secret = this.getWebhookSecret(provider);
+    
     const verification = await paymentService.verifyWebhook(
       payload,
       signature,
@@ -206,8 +208,8 @@ export class UnifiedPaymentService {
       throw new BadRequestException('Invalid webhook signature');
     }
 
-    // Process webhook event
-    await this.processWebhookEvent(provider, verification.event);
+    // Process webhook event (use parsed payload, not raw body)
+    await this.processWebhookEvent(provider, verification.event || payload);
   }
 
   async syncSubscriptionStatus(subscriptionId: string): Promise<Subscription> {
@@ -251,21 +253,21 @@ export class UnifiedPaymentService {
 
   /**
    * Process a one-time payment (e.g., for prorated charges)
+   * Returns a checkout URL for payment
    */
   async processOneTimePayment(
     tenantId: string,
     amount: number,
     provider: PaymentProvider,
+    customerEmail: string,
     paymentMethodId?: string,
     metadata?: Record<string, any>,
-  ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+  ): Promise<{ success: boolean; checkoutUrl?: string; transactionId?: string; error?: string }> {
     this.logger.log(
       `Processing one-time payment of ${amount} for tenant ${tenantId} via ${provider}`,
     );
 
     try {
-      // For now, we'll use Stripe for one-time payments
-      // In production, you'd implement this for each provider
       if (provider === PaymentProvider.STRIPE) {
         const result = await this.stripeService.processOneTimePayment(
           amount,
@@ -279,6 +281,28 @@ export class UnifiedPaymentService {
         );
         
         return result;
+      } else if (provider === PaymentProvider.RAZORPAY) {
+        // Create payment link for Razorpay
+        const result = await this.razorpayService.createOneTimePaymentLink(
+          amount,
+          metadata?.description || 'One-time payment',
+          customerEmail,
+          metadata,
+        );
+
+        if (!result.success) {
+          throw new BadRequestException(result.error || 'Failed to create payment link');
+        }
+
+        this.logger.log(
+          `Created Razorpay payment link for tenant ${tenantId}. Link ID: ${result.paymentLinkId}`,
+        );
+
+        return {
+          success: true,
+          checkoutUrl: result.checkoutUrl,
+          transactionId: result.paymentLinkId,
+        };
       } else {
         // For other providers, log and return success
         // In production, implement actual payment processing
@@ -375,6 +399,40 @@ export class UnifiedPaymentService {
     }
   }
 
+  private async updateSubscriptionFromStripe(stripeSubscription: any): Promise<void> {
+    const subscription = await this.subscriptionRepository.findOne({
+      where: { stripeSubscriptionId: stripeSubscription.id },
+      relations: ['plan'],
+    });
+
+    if (!subscription) {
+      this.logger.warn(`Subscription not found for Stripe subscription ${stripeSubscription.id}`);
+      return;
+    }
+
+    // Map Stripe status to internal status
+    const statusMap: Record<string, SubscriptionStatusType> = {
+      'active': SubscriptionStatus.ACTIVE,
+      'canceled': SubscriptionStatus.CANCELLED,
+      'incomplete': SubscriptionStatus.PENDING,
+      'incomplete_expired': SubscriptionStatus.EXPIRED,
+      'past_due': SubscriptionStatus.PAST_DUE,
+      'trialing': SubscriptionStatus.ACTIVE,
+      'unpaid': SubscriptionStatus.PAST_DUE,
+    };
+
+    subscription.status = statusMap[stripeSubscription.status] || SubscriptionStatus.ACTIVE;
+    subscription.currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
+    subscription.currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+
+    if (stripeSubscription.canceled_at) {
+      subscription.cancelledAt = new Date(stripeSubscription.canceled_at * 1000);
+    }
+
+    await this.subscriptionRepository.save(subscription);
+    this.logger.log(`Updated subscription ${subscription.id} from Stripe webhook`);
+  }
+
   private async processStripeEvent(event: any): Promise<void> {
     switch (event.type) {
       case 'customer.subscription.updated':
@@ -400,37 +458,58 @@ export class UnifiedPaymentService {
   }
 
   private async processRazorpayEvent(event: any): Promise<void> {
+    // Handle Razorpay webhook events
+    this.logger.log(`Razorpay event: ${event.event}`);
+    
     switch (event.event) {
+      case 'subscription.activated':
       case 'subscription.charged':
-        this.logger.log('Razorpay subscription charged');
+        await this.handleRazorpaySubscriptionSuccess(event.payload.subscription.entity);
         break;
       case 'subscription.cancelled':
-        await this.updateSubscriptionFromRazorpay(event.payload.subscription.entity);
+        await this.handleRazorpaySubscriptionCancelled(event.payload.subscription.entity);
+        break;
+      case 'payment.failed':
+        await this.handleRazorpayPaymentFailure(event.payload.payment.entity);
         break;
     }
   }
 
-  private async updateSubscriptionFromStripe(stripeSubscription: any): Promise<void> {
+  private async handleRazorpaySubscriptionSuccess(razorpaySubscription: any): Promise<void> {
     const subscription = await this.subscriptionRepository.findOne({
-      where: { stripeSubscriptionId: stripeSubscription.id },
+      where: { razorpaySubscriptionId: razorpaySubscription.id },
+      relations: ['plan'],
     });
 
-    if (subscription) {
-      subscription.status = this.mapProviderStatus(stripeSubscription.status);
-      subscription.endDate = new Date(stripeSubscription.current_period_end * 1000);
-      await this.subscriptionRepository.save(subscription);
+    if (!subscription) {
+      this.logger.warn(`Subscription not found for Razorpay subscription ${razorpaySubscription.id}`);
+      return;
     }
+
+    subscription.status = SubscriptionStatus.ACTIVE;
+    subscription.currentPeriodStart = new Date(razorpaySubscription.current_start * 1000);
+    subscription.currentPeriodEnd = new Date(razorpaySubscription.current_end * 1000);
+
+    await this.subscriptionRepository.save(subscription);
+    this.logger.log(`Updated subscription ${subscription.id} from Razorpay webhook`);
   }
 
-  private async updateSubscriptionFromRazorpay(razorpaySubscription: any): Promise<void> {
+  private async handleRazorpaySubscriptionCancelled(razorpaySubscription: any): Promise<void> {
     const subscription = await this.subscriptionRepository.findOne({
       where: { razorpaySubscriptionId: razorpaySubscription.id },
     });
 
     if (subscription) {
-      subscription.status = this.mapProviderStatus(razorpaySubscription.status);
+      subscription.status = SubscriptionStatus.CANCELLED;
+      subscription.cancelledAt = new Date();
       await this.subscriptionRepository.save(subscription);
+      this.logger.log(`Subscription ${subscription.id} cancelled via Razorpay webhook`);
     }
+  }
+
+  private async handleRazorpayPaymentFailure(payment: any): Promise<void> {
+    // Handle payment failure if needed
+    this.logger.warn(`Razorpay payment failed: ${payment.id}`);
   }
 
   private async handlePaymentSuccess(invoice: any): Promise<void> {
@@ -659,6 +738,11 @@ export class UnifiedPaymentService {
    * This is used when webhooks are not received or in test mode
    */
   async activateSubscription(subscriptionId: string, tenantId: string): Promise<void> {
+    console.log('\n' + '='.repeat(100));
+    console.log('🎯 [UNIFIED-ACTIVATE] ACTIVATING SUBSCRIPTION');
+    console.log('='.repeat(100));
+    console.log(`📋 Subscription ID: ${subscriptionId}`);
+    console.log(`👤 Tenant ID: ${tenantId}`);
     this.logger.log(`Manually activating subscription ${subscriptionId}`);
 
     const subscription = await this.subscriptionRepository.findOne({
@@ -670,17 +754,49 @@ export class UnifiedPaymentService {
       throw new NotFoundException('Subscription not found');
     }
 
-    if (subscription.status === SubscriptionStatus.ACTIVE) {
+    // Check if this is an upgrade (has upgradeIntent in metadata)
+    const upgradeIntent = subscription.metadata?.upgradeIntent;
+    if (upgradeIntent && upgradeIntent.status === 'pending_payment') {
+      this.logger.log(`🔄 [ACTIVATION] Detected upgrade intent for subscription ${subscriptionId}`);
+      this.logger.log(`🔄 [ACTIVATION] Upgrading to plan: ${upgradeIntent.newPlanId}`);
+      
+      // Get the new plan
+      const newPlan = await this.planRepository.findOne({
+        where: { id: upgradeIntent.newPlanId },
+      });
+
+      if (!newPlan) {
+        throw new NotFoundException('New plan not found for upgrade');
+      }
+
+      // Update subscription to new plan
+      subscription.planId = upgradeIntent.newPlanId;
+      subscription.plan = newPlan;
+      subscription.status = SubscriptionStatus.ACTIVE;
+      
+      // Update metadata to mark upgrade as complete
+      subscription.metadata = {
+        ...subscription.metadata,
+        upgradeIntent: {
+          ...upgradeIntent,
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+        },
+        previousPlanId: subscription.metadata.previousPlanId,
+      };
+
+      this.logger.log(`✅ [ACTIVATION] Upgrade completed - now on plan ${newPlan.name}`);
+    } else if (subscription.status === SubscriptionStatus.ACTIVE) {
       this.logger.log(`Subscription ${subscriptionId} is already active`);
       return;
+    } else {
+      // Regular activation (not an upgrade)
+      subscription.status = SubscriptionStatus.ACTIVE;
+      subscription.startDate = new Date();
+      subscription.endDate = new Date(
+        Date.now() + (subscription.plan.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
+      );
     }
-
-    // Update subscription status
-    subscription.status = SubscriptionStatus.ACTIVE;
-    subscription.startDate = new Date();
-    subscription.endDate = new Date(
-      Date.now() + (subscription.plan.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
-    );
 
     await this.subscriptionRepository.save(subscription);
 
@@ -696,13 +812,42 @@ export class UnifiedPaymentService {
 
     // Create invoice record
     const invoiceNumber = `INV-${Date.now()}-${subscription.id.substring(0, 8)}`;
+    
+    // Check if this is a prorated charge (upgrade/downgrade)
+    // Use prorated amount from metadata if available, otherwise use plan price
+    let amount = Number(subscription.plan.price);
+    let description = `${subscription.plan.name} - ${subscription.plan.billingCycle} subscription`;
+    
+    console.log(`📄 [INVOICE-CREATE] Creating invoice for subscription ${subscriptionId}`);
+    console.log(`📊 [INVOICE-CREATE] Plan: ${subscription.plan.name} ($${subscription.plan.price})`);
+    console.log(`📦 [INVOICE-CREATE] Subscription metadata:`, JSON.stringify(subscription.metadata, null, 2));
+    
+    if (subscription.metadata?.proratedAmount && subscription.metadata?.upgradeIntent) {
+      // This is an upgrade with prorated charge
+      amount = Number(subscription.metadata.proratedAmount);
+      description = `${subscription.plan.name} - Prorated upgrade charge`;
+      console.log(`✅ [INVOICE-CREATE] Using PRORATED amount: $${amount}`);
+      this.logger.log(`Using prorated amount ${amount} for upgrade invoice`);
+    } else {
+      console.log(`⚠️ [INVOICE-CREATE] Using FULL PLAN price: $${amount}`);
+    }
+    
+    const tax = 0;
+    const total = amount + tax;
+    
+    console.log(`💰 [INVOICE-CREATE] Final invoice amount: $${amount}`);
+    console.log(`💰 [INVOICE-CREATE] Total: $${total}`);
+    
     const invoice = this.invoiceRepository.create({
       subscriptionId: subscription.id,
       tenantId,
       invoiceNumber,
-      amount: subscription.plan.price,
+      amount,
+      tax,
+      total,
       currency: 'USD',
       status: InvoiceStatus.PAID,
+      invoiceDate: new Date(),
       dueDate: new Date(),
       paidAt: new Date(),
       metadata: {
@@ -710,10 +855,17 @@ export class UnifiedPaymentService {
         planName: subscription.plan.name,
         billingCycle: subscription.plan.billingCycle,
         activatedManually: true,
+        isProrated: !!subscription.metadata?.proratedAmount,
+        proratedAmount: subscription.metadata?.proratedAmount,
       },
     });
 
     await this.invoiceRepository.save(invoice);
+    
+    console.log(`✅ [INVOICE-SAVED] Invoice created: ${invoiceNumber}`);
+    console.log(`💰 [INVOICE-SAVED] Invoice amount: $${invoice.amount}`);
+    console.log(`💰 [INVOICE-SAVED] Invoice total: $${invoice.total}`);
+    console.log('='.repeat(100) + '\n');
 
     // Send welcome email
     try {

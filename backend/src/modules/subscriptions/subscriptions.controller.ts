@@ -13,6 +13,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UnifiedPaymentService } from './services/unified-payment.service';
@@ -36,12 +37,45 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 @ApiTags('subscriptions')
 @Controller('subscriptions')
 export class SubscriptionsController {
+  private readonly logger = new Logger(SubscriptionsController.name);
+
   constructor(
     private readonly paymentService: UnifiedPaymentService,
     private readonly invoiceService: InvoiceService,
     private readonly lifecycleService: SubscriptionLifecycleService,
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
+
+  @Get('payment-config')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get payment configuration' })
+  @ApiResponse({ status: 200, description: 'Payment configuration retrieved successfully' })
+  async getPaymentConfig() {
+    const defaultProvider = process.env.PAYMENT_PREFERENCE || 'stripe';
+    const paymentMode = process.env.PAYMENT_MODE || 'sandbox';
+    
+    // Determine available providers based on configuration
+    const availableProviders: string[] = [];
+    
+    if (process.env.STRIPE_SECRET_KEY) {
+      availableProviders.push('stripe');
+    }
+    if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET) {
+      availableProviders.push('paypal');
+    }
+    if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+      availableProviders.push('razorpay');
+    }
+    
+    return {
+      success: true,
+      data: {
+        defaultProvider,
+        paymentMode,
+        availableProviders: availableProviders.length > 0 ? availableProviders : ['stripe'],
+      },
+    };
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -241,21 +275,33 @@ export class SubscriptionsController {
 
   @Post('webhooks/razorpay')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Handle Razorpay webhook events' })
+  @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
   async handleRazorpayWebhook(
     @Body() payload: any,
     @Headers('x-razorpay-signature') signature: string,
   ) {
-    if (!signature) {
-      throw new BadRequestException('Missing razorpay signature');
+    this.logger.log('🔔 [RAZORPAY-WEBHOOK] Received webhook');
+    this.logger.log(`📦 [RAZORPAY-WEBHOOK] Event: ${payload.event}`);
+    this.logger.log(`📦 [RAZORPAY-WEBHOOK] Payload:`, JSON.stringify(payload, null, 2));
+
+    try {
+      await this.paymentService.handleWebhook(
+        PaymentProvider.RAZORPAY,
+        payload,
+        signature || '',
+      );
+
+      this.logger.log('✅ [RAZORPAY-WEBHOOK] Webhook processed successfully');
+      return { received: true, status: 'success' };
+    } catch (error) {
+      this.logger.error(`❌ [RAZORPAY-WEBHOOK] Error processing webhook: ${error.message}`);
+      this.logger.error(`❌ [RAZORPAY-WEBHOOK] Stack:`, error.stack);
+      
+      // Return 200 anyway to prevent Razorpay from retrying
+      // Log the error for manual investigation
+      return { received: true, status: 'error', error: error.message };
     }
-
-    await this.paymentService.handleWebhook(
-      PaymentProvider.RAZORPAY,
-      payload,
-      signature,
-    );
-
-    return { received: true };
   }
 
   @Post(':id/renew')
@@ -280,6 +326,11 @@ export class SubscriptionsController {
     @Param('id') subscriptionId: string,
     @Body() upgradeDto: UpgradeSubscriptionDto,
   ) {
+    this.logger.log(`🎯 [CONTROLLER] Upgrade request received`);
+    this.logger.log(`🎯 [CONTROLLER] Subscription ID: ${subscriptionId}`);
+    this.logger.log(`🎯 [CONTROLLER] New Plan ID: ${upgradeDto.newPlanId}`);
+    this.logger.log(`🎯 [CONTROLLER] Payment Provider: ${upgradeDto.paymentProvider}`);
+
     const subscription = await this.lifecycleService.upgradeSubscription(
       subscriptionId,
       upgradeDto.newPlanId,
@@ -287,6 +338,32 @@ export class SubscriptionsController {
       upgradeDto.paymentMethodId,
     );
 
+    this.logger.log(`🎯 [CONTROLLER] Subscription returned from service`);
+    this.logger.log(`🎯 [CONTROLLER] Subscription metadata: ${JSON.stringify(subscription.metadata)}`);
+
+    // Extract checkout URL from metadata if present
+    const checkoutUrl = subscription.metadata?.checkoutUrl;
+    const proratedAmount = subscription.metadata?.proratedAmount;
+
+    this.logger.log(`🎯 [CONTROLLER] Extracted checkout URL: ${checkoutUrl}`);
+    this.logger.log(`🎯 [CONTROLLER] Extracted prorated amount: ${proratedAmount}`);
+
+    if (checkoutUrl) {
+      // Payment required - return checkout URL for redirect
+      this.logger.log(`✅ [CONTROLLER] Returning checkout URL for payment`);
+      return {
+        success: true,
+        data: {
+          checkoutUrl,
+          proratedAmount,
+          subscriptionId: subscription.id,
+        },
+        message: 'Please complete payment to upgrade your plan',
+      };
+    }
+
+    // No payment required (free upgrade or already paid)
+    this.logger.log(`⚠️ [CONTROLLER] No checkout URL found - returning success without payment`);
     return {
       success: true,
       data: subscription,
@@ -328,6 +405,77 @@ export class SubscriptionsController {
       data: subscription,
       message: 'Coupon applied successfully',
     };
+  }
+
+  @Post(':id/activate-razorpay')
+  @ApiOperation({ summary: 'Activate Razorpay subscription after payment' })
+  @ApiResponse({ status: 200, description: 'Subscription activated successfully' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async activateRazorpaySubscription(
+    @Param('id') subscriptionIdParam: string,
+    @Body() body: { subscriptionId: string; tenantId: string; razorpayPaymentId?: string; razorpayPaymentLinkId?: string },
+  ) {
+    this.logger.log('🎯 [RAZORPAY ACTIVATION] Endpoint called');
+    this.logger.log(`📋 [RAZORPAY ACTIVATION] Subscription ID from URL: ${subscriptionIdParam}`);
+    this.logger.log(`📋 [RAZORPAY ACTIVATION] Body:`, JSON.stringify(body));
+    
+    try {
+      // Verify tenant ID is provided
+      if (!body.tenantId) {
+        this.logger.error('❌ [RAZORPAY ACTIVATION] Missing tenant ID');
+        throw new BadRequestException('Tenant ID is required');
+      }
+
+      // Check if the ID is a UUID (database ID) or Razorpay subscription ID
+      // UUIDs have format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      // Razorpay IDs have format: sub_xxxxx
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subscriptionIdParam);
+      
+      let subscription;
+      if (isUUID) {
+        this.logger.log(`🔍 [RAZORPAY ACTIVATION] Looking up by database UUID`);
+        // For upgrades - direct database lookup
+        subscription = await this.subscriptionsService.findById(subscriptionIdParam);
+      } else {
+        this.logger.log(`🔍 [RAZORPAY ACTIVATION] Looking up by Razorpay subscription ID`);
+        // For initial subscriptions - lookup by Razorpay ID
+        subscription = await this.subscriptionsService.findByRazorpayId(subscriptionIdParam);
+      }
+
+      if (!subscription) {
+        this.logger.error('❌ [RAZORPAY ACTIVATION] Subscription not found');
+        throw new BadRequestException('Subscription not found');
+      }
+
+      if (subscription.tenantId !== body.tenantId) {
+        this.logger.error('❌ [RAZORPAY ACTIVATION] Tenant ID mismatch');
+        throw new BadRequestException('Invalid tenant ID for this subscription');
+      }
+      
+      this.logger.log(`🔄 [RAZORPAY ACTIVATION] Found subscription: ${subscription.id}`);
+      this.logger.log(`🔄 [RAZORPAY ACTIVATION] Calling activateSubscription...`);
+      
+      // Activate the subscription using the database UUID
+      await this.paymentService.activateSubscription(
+        subscription.id,
+        body.tenantId,
+      );
+
+      this.logger.log(`✅ [RAZORPAY ACTIVATION] Subscription activated successfully`);
+
+      return {
+        success: true,
+        message: 'Razorpay subscription activated successfully',
+      };
+    } catch (error) {
+      this.logger.error('❌ [RAZORPAY ACTIVATION] Failed to activate:', error.message);
+      this.logger.error('❌ [RAZORPAY ACTIVATION] Stack:', error.stack);
+      return {
+        success: false,
+        message: 'Subscription activation pending. Will be activated via webhook.',
+        error: error.message,
+      };
+    }
   }
 
   @Post('activate')
@@ -397,6 +545,31 @@ export class SubscriptionsController {
     return this.subscriptionsService.getCurrentSubscription(req.user.tenantId);
   }
 
+  @Get('my-subscription')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get my subscription (any status including pending)' })
+  @ApiResponse({ status: 200, description: 'Subscription retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'No subscription found' })
+  async getMySubscription(@Req() req: any) {
+    const tenantId = req.user.tenantId;
+    const userRole = req.user.role;
+
+    // Super admin can view any tenant's subscription
+    // Regular users can only view their own tenant's subscription
+    const subscription = await this.subscriptionsService.getSubscriptionByTenant(
+      tenantId,
+    );
+
+    if (!subscription) {
+      throw new BadRequestException('No subscription found for this tenant');
+    }
+
+    return {
+      success: true,
+      data: subscription,
+    };
+  }
+
   @Get('usage')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get subscription usage statistics' })
@@ -412,6 +585,37 @@ export class SubscriptionsController {
     return {
       success: true,
       message: 'Get tenant subscription endpoint',
+    };
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get subscription by ID' })
+  @ApiResponse({ status: 200, description: 'Subscription retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Access denied' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async getSubscriptionById(
+    @Param('id') subscriptionId: string,
+    @Req() req: any,
+  ) {
+    const tenantId = req.user.tenantId;
+    const userRole = req.user.role;
+
+    const subscription = await this.subscriptionsService.findById(subscriptionId);
+
+    if (!subscription) {
+      throw new BadRequestException('Subscription not found');
+    }
+
+    // Authorization check: super_admin can view any subscription
+    // Regular users can only view their own tenant's subscription
+    if (userRole !== 'super_admin' && subscription.tenantId !== tenantId) {
+      throw new BadRequestException('Access denied to this subscription');
+    }
+
+    return {
+      success: true,
+      data: subscription,
     };
   }
 

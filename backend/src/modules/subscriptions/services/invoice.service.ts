@@ -69,9 +69,26 @@ export class InvoiceService {
 
     const plan = subscription.plan;
     const tenant = subscription.tenant;
-    const amount = Number(plan.price);
+    
+    // Check if this is a prorated charge (upgrade/downgrade)
+    // Use prorated amount from metadata if available, otherwise use plan price
+    let amount = Number(plan.price);
+    let description = `${plan.name} - ${plan.billingCycle} subscription`;
+    
+    if (subscription.metadata?.proratedAmount && subscription.metadata?.upgradeIntent) {
+      // This is an upgrade with prorated charge
+      amount = Number(subscription.metadata.proratedAmount);
+      description = `${plan.name} - Prorated upgrade charge`;
+      this.logger.log(`Using prorated amount $${amount} for upgrade invoice`);
+    }
+    
     const tax = amount * 0.0; // No tax for now, can be configured
     const total = amount + tax;
+
+    console.log(`💰 [INVOICE-FINAL] Final invoice amount: ${amount}`);
+    console.log(`💰 [INVOICE-FINAL] Tax: ${tax}`);
+    console.log(`💰 [INVOICE-FINAL] Total: ${total}`);
+    console.log(`📝 [INVOICE-FINAL] Description: ${description}`);
 
     // Create invoice record
     const invoice = this.invoiceRepository.create({
@@ -89,7 +106,7 @@ export class InvoiceService {
       paymentMethod,
       items: [
         {
-          description: `${plan.name} - ${plan.billingCycle} subscription`,
+          description,
           quantity: 1,
           unitPrice: amount,
           total: amount,
@@ -108,6 +125,10 @@ export class InvoiceService {
     await this.invoiceRepository.save(savedInvoice);
 
     this.logger.log(`Invoice ${savedInvoice.invoiceNumber} created for subscription ${subscriptionId}`);
+    console.log(`✅ [INVOICE-SAVED] Invoice created: ${savedInvoice.invoiceNumber}`);
+    console.log(`💰 [INVOICE-SAVED] Invoice amount: ${savedInvoice.amount}`);
+    console.log(`💰 [INVOICE-SAVED] Invoice total: ${savedInvoice.total}`);
+    console.log('='.repeat(100) + '\n');
 
     return savedInvoice;
   }

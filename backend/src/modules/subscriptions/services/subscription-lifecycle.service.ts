@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, DataSource } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Subscription, SubscriptionStatus } from '../entities/subscription.entity';
 import { SubscriptionPlan } from '../entities/subscription-plan.entity';
@@ -22,6 +22,7 @@ export class SubscriptionLifecycleService {
     private tenantRepository: Repository<Tenant>,
     private paymentService: UnifiedPaymentService,
     private emailService: EmailNotificationService,
+    private dataSource: DataSource,
   ) {}
 
   /**
@@ -127,6 +128,7 @@ export class SubscriptionLifecycleService {
 
   /**
    * Upgrade subscription to a higher plan
+   * Creates a prorated invoice for the difference and updates the plan immediately after payment
    */
   async upgradeSubscription(
     subscriptionId: string,
@@ -158,84 +160,122 @@ export class SubscriptionLifecycleService {
       );
     }
 
-    // Calculate prorated amount
+    // Calculate prorated amount (only the difference for remaining days)
     const proratedAmount = this.calculateProratedAmount(
       subscription,
       newPlan,
     );
 
     this.logger.log(
-      `Upgrading subscription ${subscriptionId} from plan ${subscription.planId} to ${newPlanId}. Prorated amount: ${proratedAmount}`,
+      `🔄 [UPGRADE] Subscription ${subscriptionId}: ${subscription.plan.name} ($${subscription.plan.price}) → ${newPlan.name} ($${newPlan.price})`,
     );
+    this.logger.log(`💰 [UPGRADE] Prorated charge for remaining period: ${proratedAmount.toFixed(2)}`);
+    this.logger.log(`💳 [UPGRADE] Payment provider: ${provider}`);
+    console.log('\n' + '='.repeat(100));
+    console.log('🔄 [UPGRADE-LIFECYCLE] UPGRADE INITIATED');
+    console.log('='.repeat(100));
+    console.log(`📋 Subscription ID: ${subscriptionId}`);
+    console.log(`👤 Tenant ID: ${subscription.tenantId}`);
+    console.log(`📊 Current Plan: ${subscription.plan.name} (ID: ${subscription.planId})`);
+    console.log(`💵 Current Plan Price: ${subscription.plan.price}`);
+    console.log(`📊 New Plan: ${newPlan.name} (ID: ${newPlanId})`);
+    console.log(`💵 New Plan Price: ${newPlan.price}`);
+    console.log(`💰 CALCULATED PRORATED AMOUNT: ${proratedAmount.toFixed(2)}`);
+    console.log(`💳 Payment Provider: ${provider}`);
+    console.log('='.repeat(100) + '\n');
 
     // Process prorated payment if amount > 0
+    let checkoutUrl: string | undefined;
     if (proratedAmount > 0) {
       try {
-        await this.paymentService.processOneTimePayment(
+        // Get tenant email for payment link
+        const tenant = await this.dataSource.query(
+          'SELECT email FROM users WHERE "tenantId" = $1 LIMIT 1',
+          [subscription.tenantId],
+        );
+        const customerEmail = tenant[0]?.email || 'customer@example.com';
+        
+        this.logger.log(`📧 [UPGRADE] Creating prorated payment for ${customerEmail}`);
+
+        console.log(`📧 [UPGRADE-PAYMENT] Creating payment for ${customerEmail}`);
+        console.log(`💰 [UPGRADE-PAYMENT] Amount: ${proratedAmount.toFixed(2)}`);
+        console.log(`📦 [UPGRADE-PAYMENT] Metadata:`, JSON.stringify({
+          description: `Upgrade: ${subscription.plan.name} → ${newPlan.name} (prorated)`,
+          subscriptionId: subscription.id,
+          tenantId: subscription.tenantId,
+          newPlanId: newPlanId,
+          oldPlanId: subscription.planId,
+          type: 'upgrade_proration',
+          isProrated: true,
+          proratedAmount,
+        }, null, 2));
+        const paymentResult = await this.paymentService.processOneTimePayment(
           subscription.tenantId,
           proratedAmount,
           provider,
+          customerEmail,
           paymentMethodId,
           {
-            description: `Prorated charge for upgrade from ${subscription.plan.name} to ${newPlan.name}`,
+            description: `Upgrade: ${subscription.plan.name} → ${newPlan.name} (prorated)`,
             subscriptionId: subscription.id,
+            tenantId: subscription.tenantId,
+            newPlanId: newPlanId,
+            oldPlanId: subscription.planId,
             type: 'upgrade_proration',
+            // Mark this as a prorated charge to prevent duplicate invoices
+            isProrated: true,
+            proratedAmount,
           },
         );
-        this.logger.log(
-          `Prorated payment of ${proratedAmount} processed successfully for subscription ${subscriptionId}`,
-        );
+        
+        checkoutUrl = paymentResult.checkoutUrl;
+
+        this.logger.log(`✅ [UPGRADE] Payment link created: ${checkoutUrl}`);
+        console.log(`✅ [UPGRADE-PAYMENT] Payment link created successfully`);
+        console.log(`🔗 [UPGRADE-PAYMENT] Checkout URL: ${checkoutUrl}`);
       } catch (error) {
-        this.logger.error(
-          `Failed to process prorated payment for subscription ${subscriptionId}: ${error.message}`,
-        );
+        this.logger.error(`❌ [UPGRADE] Payment link creation failed: ${error.message}`);
         throw new BadRequestException(
-          `Failed to process prorated payment: ${error.message}`,
+          `Failed to create payment link: ${error.message}`,
         );
       }
+    } else {
+      this.logger.log(`⚠️ [UPGRADE] No prorated charge needed (amount: $0)`);
     }
 
     const previousPlanId = subscription.planId;
 
-    // Update subscription
-    subscription.planId = newPlanId;
+    // Store upgrade intent (plan will be updated after payment confirmation)
     subscription.metadata = {
       ...subscription.metadata,
       previousPlanId,
-      upgradedAt: new Date().toISOString(),
+      upgradeIntent: {
+        newPlanId,
+        proratedAmount,
+        initiatedAt: new Date().toISOString(),
+        status: 'pending_payment',
+        // Prevent duplicate invoice creation
+        invoiceCreated: false,
+      },
+      checkoutUrl,
       proratedAmount,
     };
 
+    console.log(`💾 [UPGRADE-METADATA] Saving subscription metadata:`);
+    console.log(JSON.stringify(subscription.metadata, null, 2));
     await this.subscriptionRepository.save(subscription);
 
-    // Update tenant
-    await this.updateTenantSubscription(
-      subscription.tenantId,
-      newPlanId,
-      subscription.endDate,
-    );
-
-    // Send upgrade confirmation email
-    try {
-      await this.emailService.sendUpgradeConfirmation(
-        subscription,
-        newPlan,
-        proratedAmount,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to send upgrade confirmation email: ${error.message}`,
-      );
-      // Don't fail the upgrade if email fails
-    }
-
-    this.logger.log(`Subscription ${subscriptionId} upgraded to plan ${newPlanId}`);
+    this.logger.log(`✅ [UPGRADE] Upgrade initiated. Waiting for payment confirmation.`);
+    console.log(`✅ [UPGRADE-COMPLETE] Upgrade initiated. Waiting for payment confirmation.`);
+    console.log('='.repeat(100) + '\n');
 
     return subscription;
   }
 
   /**
    * Downgrade subscription to a lower plan
+   * Schedules the downgrade for the end of the current billing period
+   * No immediate charge - customer keeps current plan until period ends
    */
   async downgradeSubscription(
     subscriptionId: string,
@@ -271,11 +311,18 @@ export class SubscriptionLifecycleService {
       newPlan,
     );
 
-    // Schedule downgrade at end of current period
+    this.logger.log(
+      `🔽 [DOWNGRADE] Subscription ${subscriptionId}: ${subscription.plan.name} ($${subscription.plan.price}) → ${newPlan.name} ($${newPlan.price})`,
+    );
+    this.logger.log(`📅 [DOWNGRADE] Scheduled for: ${subscription.endDate.toISOString()}`);
+
+    // Schedule downgrade at end of current period (no immediate charge)
     subscription.metadata = {
       ...subscription.metadata,
       scheduledDowngradePlanId: newPlanId,
       scheduledDowngradeAt: subscription.endDate.toISOString(),
+      // Prevent duplicate invoice creation when downgrade executes
+      downgradeInvoiceCreated: false,
     };
 
     await this.subscriptionRepository.save(subscription);
@@ -294,9 +341,7 @@ export class SubscriptionLifecycleService {
       // Don't fail the downgrade if email fails
     }
 
-    this.logger.log(
-      `Subscription ${subscriptionId} scheduled for downgrade to plan ${newPlanId} at ${subscription.endDate}`,
-    );
+    this.logger.log(`✅ [DOWNGRADE] Downgrade scheduled successfully`);
 
     return subscription;
   }
@@ -877,14 +922,25 @@ export class SubscriptionLifecycleService {
       return;
     }
 
+    const oldPlanId = subscription.planId;
+
+    this.logger.log(
+      `🔽 [DOWNGRADE-EXECUTE] Executing scheduled downgrade for subscription ${subscription.id}`,
+    );
+
     // Update subscription to new plan
     subscription.planId = newPlanId;
     subscription.metadata = {
       ...subscription.metadata,
-      previousPlanId: subscription.planId,
+      previousPlanId: oldPlanId,
       downgradedAt: new Date().toISOString(),
       scheduledDowngradePlanId: undefined,
       scheduledDowngradeAt: undefined,
+      downgradeInvoiceCreated: false, // Prevent duplicate invoices
+      // Reset quota warnings for new plan limits
+      quotaWarningsSent: {},
+      quotaResetAt: new Date().toISOString(),
+      quotaResetReason: 'downgrade',
     };
 
     // Renew with new plan
@@ -906,7 +962,7 @@ export class SubscriptionLifecycleService {
     );
 
     this.logger.log(
-      `Subscription ${subscription.id} downgraded to plan ${newPlanId}`,
+      `✅ [DOWNGRADE-EXECUTE] Subscription ${subscription.id} downgraded to ${newPlan.name}. Quota warnings reset.`,
     );
   }
 
