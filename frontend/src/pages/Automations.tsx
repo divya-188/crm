@@ -293,7 +293,7 @@ const Automations: React.FC = () => {
         </div>
         <Button
           onClick={handleCreate}
-          className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all"
+          className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all"
         >
           <Plus className="w-4 h-4" />
           {showCreateForm ? 'Cancel' : 'Create Automation'}
@@ -317,8 +317,8 @@ const Automations: React.FC = () => {
                   {stats.total}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
-                <Zap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900/20 flex items-center justify-center">
+                <Zap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
             </div>
           </Card>
@@ -532,13 +532,13 @@ const Automations: React.FC = () => {
                     whileHover={{ y: -4 }}
                     className="group"
                   >
-                    <Card className="p-6 h-full hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-purple-200 dark:hover:border-purple-800">
+                    <Card className="p-6 h-full hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary-200 dark:hover:border-primary-800">
                       <div className="flex flex-col h-full">
                         {/* Header */}
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <div className="relative">
-                              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 flex items-center justify-center shadow-lg">
+                              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 flex items-center justify-center shadow-lg">
                                 <Zap className="w-7 h-7 text-white" />
                               </div>
                               <div
@@ -709,11 +709,11 @@ const Automations: React.FC = () => {
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ delay: index * 0.03 }}
                   >
-                    <Card className="p-5 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-purple-200 dark:hover:border-purple-800">
+                    <Card className="p-5 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-primary-200 dark:hover:border-primary-800">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           <div className="relative flex-shrink-0">
-                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-md">
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-md">
                               <Zap className="w-6 h-6 text-white" />
                             </div>
                             <div

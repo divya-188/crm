@@ -461,7 +461,7 @@ const FlowBuilderContent: React.FC = () => {
           animated: isInPath,
           style: {
             ...edge.style,
-            stroke: isInPath ? '#8b5cf6' : '#e5e7eb',
+            stroke: isInPath ? '#10B981' : '#e5e7eb',
             strokeWidth: isInPath ? 3 : 2,
             opacity: isInPath ? 1 : 0.3,
           },
@@ -506,7 +506,7 @@ const FlowBuilderContent: React.FC = () => {
           animated: true,
           style: {
             ...edge.style,
-            stroke: '#8b5cf6',
+            stroke: '#10B981',
             strokeWidth: 2,
             opacity: 1,
           },
@@ -741,7 +741,7 @@ const FlowBuilderContent: React.FC = () => {
             snapGrid={[15, 15]}
             defaultEdgeOptions={{
               animated: true,
-              style: { stroke: '#8b5cf6', strokeWidth: 2 },
+              style: { stroke: '#10B981', strokeWidth: 2 },
             }}
           >
           {/* Background Grid */}
@@ -775,7 +775,7 @@ const FlowBuilderContent: React.FC = () => {
                 case 'end':
                   return '#f43f5e';
                 case 'message':
-                  return '#8b5cf6';
+                  return '#10B981';
                 case 'condition':
                   return '#06b6d4';
                 case 'input':

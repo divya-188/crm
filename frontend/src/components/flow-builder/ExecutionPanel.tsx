@@ -92,7 +92,7 @@ const ExecutionPanel: React.FC<ExecutionPanelProps> = ({
       case 'end':
         return 'bg-red-100 text-red-700';
       case 'message':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-primary-100 text-primary-700';
       case 'condition':
         return 'bg-cyan-100 text-cyan-700';
       case 'input':

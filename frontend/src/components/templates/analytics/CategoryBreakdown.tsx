@@ -20,9 +20,9 @@ interface CategoryBreakdownProps {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  TRANSACTIONAL: 'bg-blue-500',
-  UTILITY: 'bg-green-500',
-  MARKETING: 'bg-purple-500',
+  TRANSACTIONAL: 'bg-info-500',
+  UTILITY: 'bg-success-500',
+  MARKETING: 'bg-primary-500',
   ACCOUNT_UPDATE: 'bg-orange-500',
   OTP: 'bg-red-500',
 };

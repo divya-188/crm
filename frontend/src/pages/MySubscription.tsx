@@ -187,7 +187,7 @@ export default function MySubscription() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
                     activeTab === tab.id
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg'
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >

@@ -175,11 +175,11 @@ export default function AdminSubscriptionPlans() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-600"
+          className="rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600"
         />
       </div>
     );
@@ -216,7 +216,7 @@ export default function AdminSubscriptionPlans() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${activeTab === tab.id
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg'
                     : 'text-gray-600 hover:bg-gray-50'
                   }`}
               >

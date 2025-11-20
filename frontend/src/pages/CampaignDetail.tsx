@@ -218,7 +218,7 @@ export default function CampaignDetail() {
       value: stats?.deliveredCount || campaign.deliveredCount,
       color: '#10B981',
     },
-    { name: 'Read', value: stats?.readCount || campaign.readCount, color: '#8B5CF6' },
+    { name: 'Read', value: stats?.readCount || campaign.readCount, color: '#10B981' },
     { name: 'Failed', value: stats?.failedCount || campaign.failedCount, color: '#EF4444' },
   ];
 
@@ -363,8 +363,8 @@ export default function CampaignDetail() {
 
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Eye className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                <Eye className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <span className="text-sm text-gray-600 dark:text-gray-400">Read</span>
             </div>

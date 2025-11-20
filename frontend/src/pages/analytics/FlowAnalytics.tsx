@@ -28,12 +28,13 @@ import { ExportButton } from '@/components/analytics/ExportButton';
 import { pageVariants, cardVariants } from '@/lib/motion-variants';
 
 const COLORS = {
-  primary: '#8b5cf6',
-  secondary: '#06b6d4',
+  primary: '#10B981',
+  secondary: '#059669',
   accent: '#f59e0b',
-  success: '#3b82f6',
-  danger: '#f43f5e',
-  warning: '#eab308',
+  success: '#10B981',
+  danger: '#EF4444',
+  warning: '#F59E0B',
+  info: '#3B82F6',
 };
 
 interface FlowPerformance {

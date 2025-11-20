@@ -51,17 +51,17 @@ const MessageNode: React.FC<NodeProps<MessageNodeData>> = ({ data, selected, id 
         )}
         style={{
           borderLeftWidth: '3px',
-          borderLeftColor: '#8b5cf6',
+          borderLeftColor: '#10B981',
         }}
       >
         {/* Icon */}
         <div
           className="p-2 rounded-lg flex-shrink-0"
           style={{
-            backgroundColor: '#8b5cf615',
+            backgroundColor: '#10B98115',
           }}
         >
-          <MessageSquare className="w-4 h-4" style={{ color: '#8b5cf6' }} />
+          <MessageSquare className="w-4 h-4" style={{ color: '#10B981' }} />
         </div>
 
         {/* Content */}

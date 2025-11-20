@@ -519,7 +519,7 @@ export default function ApiKeys() {
 
                     {/* Icon & Status */}
                     <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0">
                         <Key className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -596,7 +596,7 @@ export default function ApiKeys() {
                   // List View
                   <Card className="p-4 hover:shadow-lg transition-shadow">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0">
                         <Key className="w-5 h-5 text-white" />
                       </div>
                       
