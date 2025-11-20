@@ -27,14 +27,9 @@ import { DateRangeSelector, DateRange } from '@/components/analytics/DateRangeSe
 import { ExportButton } from '@/components/analytics/ExportButton';
 import { pageVariants, cardVariants } from '@/lib/motion-variants';
 
-const COLORS = {
-  primary: '#8b5cf6',
-  secondary: '#06b6d4',
-  accent: '#f59e0b',
-  success: '#3b82f6',
-  danger: '#f43f5e',
-  warning: '#eab308',
-};
+import { CHART_COLORS } from '@/lib/theme-colors';
+
+const COLORS = CHART_COLORS;
 
 interface FlowPerformance {
   id: string;
@@ -265,19 +260,19 @@ export const FlowAnalytics: React.FC = () => {
           {flows.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={flows} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis type="number" stroke="#64748b" fontSize={12} domain={[0, 100]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(226, 232, 240)" />
+                <XAxis type="number" stroke="rgb(100, 116, 139)" fontSize={12} domain={[0, 100]} />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  stroke="#64748b"
+                  stroke="rgb(100, 116, 139)"
                   fontSize={12}
                   width={120}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#fff',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid rgb(226, 232, 240)',
                     borderRadius: '8px',
                   }}
                   formatter={(value: number) => `${value.toFixed(1)}%`}
@@ -312,7 +307,7 @@ export const FlowAnalytics: React.FC = () => {
         {flows.length > 0 ? (
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={flows}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgb(226, 232, 240)" />
               <XAxis
                 dataKey="name"
                 stroke="#64748b"
@@ -321,7 +316,7 @@ export const FlowAnalytics: React.FC = () => {
                 textAnchor="end"
                 height={100}
               />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <YAxis stroke="rgb(100, 116, 139)" fontSize={12} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#fff',

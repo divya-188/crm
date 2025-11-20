@@ -212,11 +212,11 @@ export const pageVariants: Variants = {
 export const cardVariants: Variants = {
   rest: { 
     scale: 1,
-    boxShadow: '0 2px 15px -3px rgba(139, 92, 246, 0.1)',
+    boxShadow: '0 2px 15px -3px rgba(0, 98, 255, 0.1)',
   },
   hover: { 
     scale: 1.02,
-    boxShadow: '0 8px 30px -3px rgba(139, 92, 246, 0.2)',
+    boxShadow: '0 8px 30px -3px rgba(0, 98, 255, 0.2)',
     transition: {
       duration: 0.3,
       ease: 'easeOut',
