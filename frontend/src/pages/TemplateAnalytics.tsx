@@ -289,7 +289,7 @@ export const TemplateAnalytics: React.FC = () => {
                   <Line
                     type="monotone"
                     dataKey="readCount"
-                    stroke="#6366f1"
+                    stroke="#10B981"
                     strokeWidth={2}
                     name="Read"
                     dot={false}
@@ -368,7 +368,7 @@ export const TemplateAnalytics: React.FC = () => {
                   <Line
                     type="monotone"
                     dataKey="readRate"
-                    stroke="#6366f1"
+                    stroke="#10B981"
                     strokeWidth={2}
                     name="Read Rate (%)"
                     dot={false}

@@ -135,9 +135,9 @@ const TriggerSelector: React.FC<TriggerSelectorProps> = ({
         text: 'text-green-600 dark:text-green-400',
       },
       purple: {
-        border: selected ? 'border-purple-500' : 'border-gray-200 dark:border-gray-700',
-        bg: selected ? 'bg-purple-50 dark:bg-purple-900/20' : '',
-        text: 'text-purple-600 dark:text-purple-400',
+        border: selected ? 'border-primary-500' : 'border-gray-200 dark:border-gray-700',
+        bg: selected ? 'bg-primary-50 dark:bg-primary-900/20' : '',
+        text: 'text-primary-600 dark:text-primary-400',
       },
       yellow: {
         border: selected ? 'border-yellow-500' : 'border-gray-200 dark:border-gray-700',
@@ -145,9 +145,9 @@ const TriggerSelector: React.FC<TriggerSelectorProps> = ({
         text: 'text-yellow-600 dark:text-yellow-400',
       },
       indigo: {
-        border: selected ? 'border-indigo-500' : 'border-gray-200 dark:border-gray-700',
-        bg: selected ? 'bg-indigo-50 dark:bg-indigo-900/20' : '',
-        text: 'text-indigo-600 dark:text-indigo-400',
+        border: selected ? 'border-primary-500' : 'border-gray-200 dark:border-gray-700',
+        bg: selected ? 'bg-primary-50 dark:bg-primary-900/20' : '',
+        text: 'text-primary-600 dark:text-primary-400',
       },
       pink: {
         border: selected ? 'border-pink-500' : 'border-gray-200 dark:border-gray-700',

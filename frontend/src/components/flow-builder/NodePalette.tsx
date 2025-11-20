@@ -149,7 +149,7 @@ export const nodeCategories: NodeCategory[] = [
         label: 'Update Field',
         icon: Edit3,
         description: 'Update contact custom field',
-        color: '#6366f1',
+        color: '#10B981',
       },
     ],
   },

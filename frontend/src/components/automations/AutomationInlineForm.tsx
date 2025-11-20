@@ -130,7 +130,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
     >
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg">
             <Zap className="w-7 h-7 text-white" />
           </div>
           <div>
@@ -167,7 +167,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
               onClick={() => setCurrentSection(section.id as any)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 currentSection === section.id
-                  ? 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
+                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
                   : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
               }`}
             >
@@ -183,7 +183,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
         {currentSection === 'basic' && (
           <div className="space-y-5">
             <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-              <Zap className="w-5 h-5 text-purple-600" />
+              <Zap className="w-5 h-5 text-primary-600" />
               Basic Information
             </h3>
             <div className="space-y-4">
@@ -237,7 +237,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
         {currentSection === 'trigger' && (
           <div className="space-y-5">
             <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-              <Zap className="w-5 h-5 text-purple-600" />
+              <Zap className="w-5 h-5 text-primary-600" />
               Trigger Configuration
             </h3>
             <TriggerSelector
@@ -254,7 +254,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
         {currentSection === 'conditions' && (
           <div className="space-y-5">
             <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-              <Filter className="w-5 h-5 text-purple-600" />
+              <Filter className="w-5 h-5 text-primary-600" />
               Conditions (Optional)
             </h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -273,7 +273,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
         {currentSection === 'actions' && (
           <div className="space-y-5">
             <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-              <Play className="w-5 h-5 text-purple-600" />
+              <Play className="w-5 h-5 text-primary-600" />
               Actions *
             </h3>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -320,7 +320,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
               <Button
                 type="submit"
                 disabled={isLoading || !canProceed()}
-                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800"
               >
                 {isLoading ? (
                   <>
@@ -350,7 +350,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
                   }
                 }}
                 disabled={!canProceed()}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800"
               >
                 Next
               </Button>

@@ -17,10 +17,10 @@ import toast, { ToastOptions } from 'react-hot-toast';
 const THEME_COLORS = {
   success: '#3b82f6',    // success-500 (Blue)
   error: '#f43f5e',      // danger-500 (Rose)
-  warning: '#eab308',    // warning-500 (Yellow)
-  info: '#06b6d4',       // secondary-500 (Cyan)
+  warning: '#F59E0B',    // warning-500 (Amber)
+  info: '#3B82F6',       // info-500 (Blue)
   loading: '#64748b',    // neutral-500 (Slate)
-  confirm: '#8b5cf6',    // primary-500 (Purple)
+  confirm: '#10B981',    // primary-500 (Emerald)
   white: '#ffffff',
 } as const;
 
