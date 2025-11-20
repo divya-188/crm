@@ -5,6 +5,7 @@ import { Campaign, CampaignStatus } from './entities/campaign.entity';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { Contact } from '../contacts/entities/contact.entity';
 import { Template, TemplateStatus } from '../templates/entities/template.entity';
+import { CampaignExecutorService } from './services/campaign-executor.service';
 
 @Injectable()
 export class CampaignsService {
@@ -15,6 +16,7 @@ export class CampaignsService {
     private contactsRepository: Repository<Contact>,
     @InjectRepository(Template)
     private templatesRepository: Repository<Template>,
+    private campaignExecutorService: CampaignExecutorService,
   ) {}
 
   async create(tenantId: string, createCampaignDto: CreateCampaignDto): Promise<Campaign> {
@@ -138,7 +140,14 @@ export class CampaignsService {
     campaign.status = CampaignStatus.RUNNING;
     campaign.startedAt = new Date();
 
-    return this.campaignsRepository.save(campaign);
+    const savedCampaign = await this.campaignsRepository.save(campaign);
+
+    // Execute campaign asynchronously
+    this.campaignExecutorService.executeCampaign(id).catch((error) => {
+      console.error(`Failed to execute campaign ${id}:`, error);
+    });
+
+    return savedCampaign;
   }
 
   async pause(tenantId: string, id: string): Promise<Campaign> {

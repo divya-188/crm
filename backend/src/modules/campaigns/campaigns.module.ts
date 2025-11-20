@@ -5,6 +5,7 @@ import { Contact } from '../contacts/entities/contact.entity';
 import { Template } from '../templates/entities/template.entity';
 import { CampaignsService } from './campaigns.service';
 import { CampaignsController } from './campaigns.controller';
+import { CampaignExecutorService } from './services/campaign-executor.service';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
@@ -13,7 +14,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
     SubscriptionsModule,
   ],
   controllers: [CampaignsController],
-  providers: [CampaignsService],
-  exports: [CampaignsService],
+  providers: [CampaignsService, CampaignExecutorService],
+  exports: [CampaignsService, CampaignExecutorService],
 })
 export class CampaignsModule {}
