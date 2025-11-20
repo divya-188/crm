@@ -130,7 +130,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
               transition={{ delay: 0.3, type: "spring" }}
               className="text-right ml-6"
             >
-              <div className="text-4xl font-bold bg-gradient-to-br from-violet-600 to-primary-600 bg-clip-text text-transparent tracking-tight">
+              <div className="text-4xl font-bold bg-gradient-to-br from-primary-600 to-primary-600 bg-clip-text text-transparent tracking-tight">
                 ${subscription?.plan?.price || '0'}
               </div>
               <div className="text-gray-500 text-sm font-normal mt-1">per {subscription?.plan?.billingCycle || 'month'}</div>
