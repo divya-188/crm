@@ -72,7 +72,7 @@ export function FinalizeStep({ data, onSubmit, isSubmitting }: FinalizeStepProps
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white"
+        className="bg-gradient-to-br from-blue-500 to-primary-600 rounded-2xl p-6 text-white"
       >
         <div className="flex items-center justify-between">
           <div>

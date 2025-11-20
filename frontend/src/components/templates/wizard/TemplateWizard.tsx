@@ -198,7 +198,7 @@ export function TemplateWizard({ isOpen, onClose, template }: TemplateWizardProp
           className="relative w-full max-w-7xl h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <div className="relative px-8 py-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+          <div className="relative px-8 py-6 border-b bg-gradient-to-r from-blue-50 to-primary-50">
             <button
               onClick={onClose}
               className="absolute top-6 right-6 p-2 rounded-lg hover:bg-white/80 transition-colors"
@@ -207,7 +207,7 @@ export function TemplateWizard({ isOpen, onClose, template }: TemplateWizardProp
             </button>
 
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-primary-600 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -235,7 +235,7 @@ export function TemplateWizard({ isOpen, onClose, template }: TemplateWizardProp
                       <motion.div
                         className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-semibold transition-all ${
                           index === currentStep
-                            ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg scale-110'
+                            ? 'bg-gradient-to-br from-blue-500 to-primary-600 text-white shadow-lg scale-110'
                             : completedSteps.includes(index)
                             ? 'bg-green-500 text-white'
                             : 'bg-gray-200 text-gray-600'
@@ -251,7 +251,7 @@ export function TemplateWizard({ isOpen, onClose, template }: TemplateWizardProp
                       {index === currentStep && (
                         <motion.div
                           layoutId="activeStep"
-                          className="absolute -inset-1 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 opacity-20"
+                          className="absolute -inset-1 rounded-xl bg-gradient-to-br from-blue-500 to-primary-600 opacity-20"
                         />
                       )}
                     </div>
@@ -321,7 +321,7 @@ export function TemplateWizard({ isOpen, onClose, template }: TemplateWizardProp
                   disabled={!canProceed()}
                   className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center space-x-2 ${
                     canProceed()
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg'
+                      ? 'bg-gradient-to-r from-blue-500 to-primary-600 text-white hover:shadow-lg'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >

@@ -147,11 +147,11 @@ export default function SubscriptionCancel() {
 
           <motion.div 
             whileHover={{ scale: 1.05, y: -5 }}
-            className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-2xl border border-purple-200 shadow-sm cursor-default"
+            className="bg-gradient-to-br from-primary-50 to-primary-100 p-5 rounded-2xl border border-primary-200 shadow-sm cursor-default"
           >
-            <CheckCircle2 className="w-10 h-10 text-purple-600 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-purple-900">Try Again</p>
-            <p className="text-xs text-purple-700 mt-1">Anytime you want</p>
+            <CheckCircle2 className="w-10 h-10 text-primary-600 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-primary-900">Try Again</p>
+            <p className="text-xs text-primary-700 mt-1">Anytime you want</p>
           </motion.div>
         </motion.div>
 

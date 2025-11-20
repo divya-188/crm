@@ -77,7 +77,7 @@ export const BestPracticesPanel: React.FC = () => {
             description: 'Use lowercase letters, numbers, and underscores only. Example: order_confirmation_v1',
           },
           {
-            icon: <Sparkles className="h-5 w-5 text-purple-600" />,
+            icon: <Sparkles className="h-5 w-5 text-primary-600" />,
             title: 'Category Selection',
             description: `${category === 'MARKETING' ? 'Marketing templates have stricter approval requirements. Ensure your content provides clear value.' : 'Choose the category that best matches your use case for faster approval.'}`,
           }
@@ -107,7 +107,7 @@ export const BestPracticesPanel: React.FC = () => {
             description: 'Keep messages clear and concise (max 1024 chars). Use placeholders for personalization but avoid excessive use (max 5 recommended).',
           },
           {
-            icon: <Sparkles className="h-5 w-5 text-purple-600" />,
+            icon: <Sparkles className="h-5 w-5 text-primary-600" />,
             title: 'Placeholder Usage',
             description: 'Use sequential numbering {{1}}, {{2}}, etc. Avoid stacking placeholders without separators. Don\'t start or end with placeholders.',
           }
@@ -132,7 +132,7 @@ export const BestPracticesPanel: React.FC = () => {
             description: 'Use clear, action-oriented text (max 25 chars). Don\'t mix Quick Reply with Call-to-Action buttons. Max 3 Quick Reply or 2 CTA buttons.',
           },
           {
-            icon: <Sparkles className="h-5 w-5 text-purple-600" />,
+            icon: <Sparkles className="h-5 w-5 text-primary-600" />,
             title: 'Button Text',
             description: 'Make button text specific and actionable. Examples: "View Order", "Contact Support", "Yes, Confirm".',
           }
@@ -449,7 +449,7 @@ export const BestPracticesPanel: React.FC = () => {
         <CollapsibleSection
           id="examples"
           title="Example Templates"
-          icon={<BookOpen className="h-5 w-5 text-purple-500" />}
+          icon={<BookOpen className="h-5 w-5 text-primary-500" />}
           isExpanded={expandedSections.has('examples')}
           onToggle={() => toggleSection('examples')}
         >
@@ -457,7 +457,7 @@ export const BestPracticesPanel: React.FC = () => {
             {exampleTemplates.map((example) => (
               <div
                 key={example.id}
-                className="rounded-lg border border-gray-200 bg-white p-4 hover:border-purple-300 transition-colors"
+                className="rounded-lg border border-gray-200 bg-white p-4 hover:border-primary-300 transition-colors"
               >
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="text-sm font-medium text-gray-900">{example.name}</h4>
@@ -545,21 +545,21 @@ export const BestPracticesPanel: React.FC = () => {
       </CollapsibleSection>
 
       {/* Meta Policy Updates */}
-      <div className="rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 p-4 border border-purple-200">
+      <div className="rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 p-4 border border-primary-200">
         <div className="flex items-start space-x-3">
-          <Sparkles className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+          <Sparkles className="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-sm font-medium text-purple-900 mb-1">
+            <h4 className="text-sm font-medium text-primary-900 mb-1">
               Stay Updated with Meta Policies
             </h4>
-            <p className="text-sm text-purple-700 mb-3">
+            <p className="text-sm text-primary-700 mb-3">
               WhatsApp template policies are regularly updated. Review the latest guidelines to ensure compliance.
             </p>
             <a
               href="https://developers.facebook.com/docs/whatsapp/message-templates/guidelines"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center space-x-1 text-sm font-medium text-purple-600 hover:text-purple-700"
+              className="inline-flex items-center space-x-1 text-sm font-medium text-primary-600 hover:text-primary-700"
             >
               <span>View Meta's Template Guidelines</span>
               <ExternalLink className="h-3 w-3" />

@@ -203,8 +203,8 @@ export const PreferencesSettings: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Keyboard className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-primary-100 rounded-lg">
+              <Keyboard className="w-5 h-5 text-primary-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Keyboard Shortcuts</h3>

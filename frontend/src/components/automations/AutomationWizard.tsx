@@ -135,7 +135,7 @@ const AutomationWizard: React.FC<AutomationWizardProps> = ({
               <div
                 className={`flex items-center gap-2 ${
                   currentStep === step.id
-                    ? 'text-purple-600 dark:text-purple-400'
+                    ? 'text-primary-600 dark:text-primary-400'
                     : currentStep > step.id
                     ? 'text-green-600 dark:text-green-400'
                     : 'text-gray-400'
@@ -144,7 +144,7 @@ const AutomationWizard: React.FC<AutomationWizardProps> = ({
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center ${
                     currentStep === step.id
-                      ? 'bg-purple-100 dark:bg-purple-900'
+                      ? 'bg-primary-100 dark:bg-primary-900'
                       : currentStep > step.id
                       ? 'bg-green-100 dark:bg-green-900'
                       : 'bg-gray-200 dark:bg-gray-700'

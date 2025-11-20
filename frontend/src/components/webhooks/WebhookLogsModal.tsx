@@ -110,7 +110,7 @@ export function WebhookLogsModal({ webhook, onClose }: WebhookLogsModalProps) {
 
               <div className="text-center">
                 <div className="flex items-center justify-center mb-1">
-                  <Clock className="w-4 h-4 text-purple-500" />
+                  <Clock className="w-4 h-4 text-primary-500" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.avgResponseTimeMs}ms

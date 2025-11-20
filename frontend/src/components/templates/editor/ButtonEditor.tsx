@@ -255,7 +255,7 @@ export const ButtonEditor: React.FC = () => {
                 {quickReplyCount}/{MAX_QUICK_REPLY_BUTTONS} Quick Reply
               </span>
             ) : (
-              <span className="rounded-full bg-purple-100 px-2 py-1 text-purple-700 font-medium">
+              <span className="rounded-full bg-primary-100 px-2 py-1 text-primary-700 font-medium">
                 {ctaCount}/{MAX_CTA_BUTTONS} Call-To-Action
               </span>
             )}

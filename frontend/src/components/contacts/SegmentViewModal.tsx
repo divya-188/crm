@@ -205,7 +205,7 @@ const ContactItem = ({ contact }: ContactItemProps) => {
       <Card className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
         <div className="flex items-center gap-3">
           {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
             {contact.avatarUrl || contact.avatar ? (
               <img
                 src={contact.avatarUrl || contact.avatar}

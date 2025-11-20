@@ -58,7 +58,7 @@ export function PersonalizationStep({ data, updateData }: StepProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-br from-primary-50 to-purple-50 border-2 border-primary-200 rounded-2xl p-8 text-center"
+          className="bg-gradient-to-br from-primary-50 to-primary-50 border-2 border-primary-200 rounded-2xl p-8 text-center"
         >
           <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4">
             <Sparkles className="w-8 h-8 text-primary-600" />
@@ -114,7 +114,7 @@ export function PersonalizationStep({ data, updateData }: StepProps) {
               >
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
                       <span className="text-white font-bold">{`{{${num}}}`}</span>
                     </div>
                   </div>
@@ -171,24 +171,24 @@ export function PersonalizationStep({ data, updateData }: StepProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4"
+            className="bg-gradient-to-r from-purple-50 to-pink-50 border border-primary-200 rounded-xl p-4"
           >
-            <h4 className="font-semibold text-purple-900 mb-3">✨ Best Practices</h4>
-            <ul className="text-sm text-purple-800 space-y-2">
+            <h4 className="font-semibold text-primary-900 mb-3">✨ Best Practices</h4>
+            <ul className="text-sm text-primary-800 space-y-2">
               <li className="flex items-start space-x-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="text-primary-600 font-bold">✓</span>
                 <span>Use realistic data that represents actual customer information</span>
               </li>
               <li className="flex items-start space-x-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="text-primary-600 font-bold">✓</span>
                 <span>Avoid dummy values like "XXXX" or "test123"</span>
               </li>
               <li className="flex items-start space-x-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="text-primary-600 font-bold">✓</span>
                 <span>Match the format you'll use in production (dates, currency, etc.)</span>
               </li>
               <li className="flex items-start space-x-2">
-                <span className="text-purple-600 font-bold">✓</span>
+                <span className="text-primary-600 font-bold">✓</span>
                 <span>Keep examples professional and appropriate</span>
               </li>
             </ul>

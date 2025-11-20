@@ -69,7 +69,7 @@ export const ContactDetailModal = ({ contact, onClose }: ContactDetailModalProps
       <div className="space-y-6">
         {/* Header with Avatar */}
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-semibold flex-shrink-0">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-primary-600 flex items-center justify-center text-white text-2xl font-semibold flex-shrink-0">
             {contact.avatarUrl || contact.avatar ? (
               <img
                 src={contact.avatarUrl || contact.avatar}

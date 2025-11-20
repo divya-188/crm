@@ -285,7 +285,7 @@ const TemplateCreationWizard: React.FC<TemplateCreationWizardProps> = ({
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
       {/* Header */}
-      <div className="relative bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/10 dark:to-purple-900/10 px-8 py-6 border-b border-primary-100 dark:border-primary-800">
+      <div className="relative bg-gradient-to-r from-primary-50 to-primary-50 dark:from-primary-900/10 dark:to-purple-900/10 px-8 py-6 border-b border-primary-100 dark:border-primary-800">
         <button
           onClick={onCancel}
           className="absolute top-6 right-6 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
@@ -401,7 +401,7 @@ const TemplateCreationWizard: React.FC<TemplateCreationWizardProps> = ({
                   <Button
                     onClick={handleNext}
                     disabled={!canProceed() || isLoading}
-                    className="bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700"
+                    className="bg-gradient-to-r from-primary-600 to-primary-600 hover:from-primary-700 hover:to-primary-700"
                   >
                     Continue
                     <ArrowRight className="w-4 h-4 ml-2" />

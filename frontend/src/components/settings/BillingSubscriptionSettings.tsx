@@ -290,8 +290,8 @@ export const BillingSubscriptionSettings: React.FC = () => {
         className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
       >
         <div className="flex items-center space-x-3 mb-6">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <CreditCard className="w-5 h-5 text-purple-600" />
+          <div className="p-2 bg-primary-100 rounded-lg">
+            <CreditCard className="w-5 h-5 text-primary-600" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Billing Information</h3>

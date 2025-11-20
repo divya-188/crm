@@ -66,7 +66,7 @@ const statusConfig = {
 const categoryConfig = {
   marketing: {
     label: 'Marketing',
-    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400',
+    color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400',
   },
   utility: {
     label: 'Utility',

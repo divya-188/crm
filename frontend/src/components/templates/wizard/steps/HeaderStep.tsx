@@ -261,7 +261,7 @@ export function HeaderStep({ data, updateData }: StepProps) {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          className="bg-gradient-to-r from-primary-50 to-purple-50 border border-primary-200 rounded-xl p-4"
+          className="bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl p-4"
         >
           <div className="flex items-start space-x-3">
             <Lightbulb className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />

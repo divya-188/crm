@@ -150,8 +150,8 @@ export const IntegrationsSettings: React.FC = () => {
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Webhook className="w-5 h-5 text-purple-600" />
+            <div className="p-2 bg-primary-100 rounded-lg">
+              <Webhook className="w-5 h-5 text-primary-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Webhooks</h3>
@@ -480,7 +480,7 @@ export const IntegrationsSettings: React.FC = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
-              <MessageSquare className="w-5 h-5 text-purple-500" />
+              <MessageSquare className="w-5 h-5 text-primary-500" />
               <h4 className="text-md font-medium text-gray-900">Slack</h4>
             </div>
             <Switch

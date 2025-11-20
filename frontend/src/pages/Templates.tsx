@@ -298,7 +298,7 @@ export default function Templates() {
   };
 
   const categoryConfig = {
-    marketing: { label: 'Marketing', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400' },
+    marketing: { label: 'Marketing', color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400' },
     utility: { label: 'Utility', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' },
     authentication: { label: 'Authentication', color: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' },
   };

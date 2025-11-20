@@ -38,7 +38,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
         </div>
         <h3 className="text-xl font-medium text-gray-900 mb-2">No Active Subscription</h3>
         <p className="text-sm text-gray-500 mb-6 font-normal">You don't have an active subscription yet</p>
-        <button className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all">
+        <button className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-primary-600 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all">
           Browse Plans
         </button>
       </motion.div>
@@ -67,7 +67,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-        className="relative bg-gradient-to-br from-violet-50/50 via-white to-purple-50/30 rounded-2xl shadow-lg p-8 border border-violet-100/50 overflow-hidden group"
+        className="relative bg-gradient-to-br from-violet-50/50 via-white to-primary-50/30 rounded-2xl shadow-lg p-8 border border-violet-100/50 overflow-hidden group"
       >
         {/* Animated Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-violet-100/20 via-transparent to-purple-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -130,7 +130,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
               transition={{ delay: 0.3, type: "spring" }}
               className="text-right ml-6"
             >
-              <div className="text-4xl font-bold bg-gradient-to-br from-violet-600 to-purple-600 bg-clip-text text-transparent tracking-tight">
+              <div className="text-4xl font-bold bg-gradient-to-br from-violet-600 to-primary-600 bg-clip-text text-transparent tracking-tight">
                 ${subscription?.plan?.price || '0'}
               </div>
               <div className="text-gray-500 text-sm font-normal mt-1">per {subscription?.plan?.billingCycle || 'month'}</div>
@@ -236,7 +236,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
                             animate={{ width: `${Math.min(percentage, 100)}%` }}
                             transition={{ duration: 0.5, delay: 0.3 + index * 0.03 }}
                             className={`h-full rounded-full ${
-                              isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-violet-500 to-purple-500'
+                              isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-violet-500 to-primary-500'
                             }`}
                           />
                         </div>

@@ -154,7 +154,7 @@ const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
 
               {index < conditions.length - 1 && (
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                  <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
                     AND
                   </span>
                 </div>

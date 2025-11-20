@@ -208,7 +208,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
     >
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg">
             <Key className="w-7 h-7 text-white" />
           </div>
           <div>
@@ -234,7 +234,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
         {/* Basic Information */}
         <div className="space-y-5">
           <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <Key className="w-5 h-5 text-purple-600" />
+            <Key className="w-5 h-5 text-primary-600" />
             Basic Information
           </h3>
           <div>
@@ -258,7 +258,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
         {/* Permissions */}
         <div className="space-y-5">
           <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <Shield className="w-5 h-5 text-purple-600" />
+            <Shield className="w-5 h-5 text-primary-600" />
             Permissions *
           </h3>
 
@@ -272,7 +272,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
                   <button
                     type="button"
                     onClick={() => handleSelectAllInCategory(category)}
-                    className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                    className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
                   >
                     {permissions.every((p) => selectedPermissions.has(p.key))
                       ? 'Deselect All'
@@ -307,7 +307,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
         {/* Rate Limiting */}
         <div className="space-y-5">
           <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-purple-600" />
+            <Activity className="w-5 h-5 text-primary-600" />
             Rate Limiting
           </h3>
 
@@ -357,7 +357,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
         {/* Expiry */}
         <div className="space-y-5">
           <h3 className="text-base font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <Clock className="w-5 h-5 text-purple-600" />
+            <Clock className="w-5 h-5 text-primary-600" />
             Expiration
           </h3>
 
@@ -401,7 +401,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
           <Button
             type="submit"
             disabled={isLoading}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-purple-700 hover:to-purple-800"
           >
             {isLoading ? (
               <>

@@ -355,7 +355,7 @@ export default function SubscriptionSuccess() {
               transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
               className="absolute -bottom-2 -left-3"
             >
-              <Sparkles className="w-5 h-5 text-purple-400" />
+              <Sparkles className="w-5 h-5 text-primary-400" />
             </motion.div>
             <motion.div
               animate={{ 
@@ -409,11 +409,11 @@ export default function SubscriptionSuccess() {
 
           <motion.div 
             whileHover={{ scale: 1.05, y: -5 }}
-            className="bg-gradient-to-br from-purple-50 to-purple-100 p-5 rounded-2xl border border-purple-200 shadow-sm cursor-default"
+            className="bg-gradient-to-br from-primary-50 to-primary-100 p-5 rounded-2xl border border-primary-200 shadow-sm cursor-default"
           >
-            <Zap className="w-10 h-10 text-purple-600 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-purple-900">Instant Access</p>
-            <p className="text-xs text-purple-700 mt-1">Active immediately</p>
+            <Zap className="w-10 h-10 text-primary-600 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-primary-900">Instant Access</p>
+            <p className="text-xs text-primary-700 mt-1">Active immediately</p>
           </motion.div>
 
           <motion.div 
@@ -488,7 +488,7 @@ export default function SubscriptionSuccess() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4 }}
-          className="mt-8 p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-violet-200"
+          className="mt-8 p-4 bg-gradient-to-r from-violet-50 to-primary-50 rounded-2xl border border-violet-200"
         >
           <p className="text-sm text-gray-600 flex items-center justify-center">
             <motion.div
