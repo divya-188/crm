@@ -822,14 +822,23 @@ export default function Templates() {
                         </div>
                       </div>
                       
-                      {/* Animated Border Beam - Only on hover */}
+                      {/* Double-sided Animated Border Beam - Only on hover */}
                       <BorderBeam
-                        size={250}
-                        duration={12}
+                        size={200}
+                        duration={8}
                         delay={0}
-                        borderWidth={1.5}
-                        colorFrom="#7c3aed"
-                        colorTo="#a78bfa"
+                        borderWidth={2}
+                        colorFrom="#10B981"
+                        colorTo="#34D399"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      />
+                      <BorderBeam
+                        size={200}
+                        duration={8}
+                        delay={4}
+                        borderWidth={2}
+                        colorFrom="#10B981"
+                        colorTo="#34D399"
                         className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                       />
                     </Card>
