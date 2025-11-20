@@ -173,9 +173,15 @@ export class CampaignsService {
 
     // Apply segment filters
     Object.entries(campaign.segmentFilters).forEach(([key, value]) => {
-      if (key === 'tags' && Array.isArray(value)) {
-        query.andWhere('contact.tags && :tags', { tags: value });
-      } else if (value !== undefined && value !== null) {
+      if (key === 'tags' && Array.isArray(value) && value.length > 0) {
+        // For simple-array, we need to use LIKE for each tag
+        const tagConditions = value.map((tag, index) => {
+          const paramName = `tag${index}`;
+          query.setParameter(paramName, `%${tag}%`);
+          return `contact.tags LIKE :${paramName}`;
+        });
+        query.andWhere(`(${tagConditions.join(' OR ')})`);
+      } else if (key !== 'tags' && key !== 'customFields' && value !== undefined && value !== null) {
         query.andWhere(`contact.${key} = :${key}`, { [key]: value });
       }
     });
@@ -255,9 +261,15 @@ export class CampaignsService {
       .where('contact.tenantId = :tenantId', { tenantId });
 
     Object.entries(filters).forEach(([key, value]) => {
-      if (key === 'tags' && Array.isArray(value)) {
-        query.andWhere('contact.tags && :tags', { tags: value });
-      } else if (value !== undefined && value !== null) {
+      if (key === 'tags' && Array.isArray(value) && value.length > 0) {
+        // For simple-array, we need to use LIKE for each tag
+        const tagConditions = value.map((tag, index) => {
+          const paramName = `tag${index}`;
+          query.setParameter(paramName, `%${tag}%`);
+          return `contact.tags LIKE :${paramName}`;
+        });
+        query.andWhere(`(${tagConditions.join(' OR ')})`);
+      } else if (key !== 'tags' && key !== 'customFields' && value !== undefined && value !== null) {
         query.andWhere(`contact.${key} = :${key}`, { [key]: value });
       }
     });
