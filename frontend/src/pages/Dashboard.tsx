@@ -28,14 +28,9 @@ import { DashboardMetrics } from '@/types/models.types';
 import { useSocket } from '@/hooks/useSocket';
 import { pageVariants, cardVariants } from '@/lib/motion-variants';
 
-const COLORS = {
-  primary: '#8b5cf6',
-  secondary: '#06b6d4',
-  accent: '#f59e0b',
-  success: '#3b82f6',
-  danger: '#f43f5e',
-  warning: '#eab308',
-};
+import { CHART_COLORS } from '@/lib/theme-colors';
+
+const COLORS = CHART_COLORS;
 
 const STATUS_COLORS = {
   open: COLORS.primary,

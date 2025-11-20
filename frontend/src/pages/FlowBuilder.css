@@ -12,12 +12,12 @@
 }
 
 .react-flow__node.selected {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 98, 255, 0.5);
 }
 
 /* Input node */
 .react-flow__node-input {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #3DD598 0%, #33cf8a 100%);
   color: white;
   font-weight: 600;
   border: none;
@@ -31,7 +31,7 @@
 
 /* Output node */
 .react-flow__node-output {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #FC5A5A 0%, #e35151 100%);
   color: white;
   font-weight: 600;
   border: none;
@@ -44,12 +44,12 @@
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: #3b82f6;
+  stroke: #0062FF;
   stroke-width: 3;
 }
 
 .react-flow__edge:hover .react-flow__edge-path {
-  stroke: #2563eb;
+  stroke: #0056e6;
 }
 
 /* Handle styles */
@@ -58,22 +58,22 @@
   height: 10px;
   border-radius: 50%;
   border: 2px solid white;
-  background: #3b82f6;
+  background: #0062FF;
   transition: all 0.2s ease;
 }
 
 .react-flow__handle:hover {
   width: 14px;
   height: 14px;
-  background: #2563eb;
+  background: #0056e6;
 }
 
 .react-flow__handle-connecting {
-  background: #10b981;
+  background: #3DD598;
 }
 
 .react-flow__handle-valid {
-  background: #10b981;
+  background: #3DD598;
 }
 
 /* Controls styles */
@@ -97,15 +97,15 @@
 }
 
 .react-flow__minimap-mask {
-  fill: rgba(59, 130, 246, 0.1);
-  stroke: #3b82f6;
+  fill: rgba(0, 98, 255, 0.1);
+  stroke: #0062FF;
   stroke-width: 2;
 }
 
 /* Selection box */
 .react-flow__selection {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid #3b82f6;
+  background: rgba(0, 98, 255, 0.1);
+  border: 1px solid #0062FF;
 }
 
 /* Attribution */
@@ -134,7 +134,7 @@
 
 /* Connection line */
 .react-flow__connectionline {
-  stroke: #3b82f6;
+  stroke: #0062FF;
   stroke-width: 2;
   stroke-dasharray: 5, 5;
   animation: dash 0.5s linear infinite;
@@ -165,7 +165,7 @@
 
 .react-flow__node.execution-completed {
   opacity: 1;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 0 2px rgba(61, 213, 152, 0.5);
 }
 
 .react-flow__node.execution-inactive {
@@ -177,7 +177,7 @@
 }
 
 .react-flow__edge.execution-completed {
-  stroke: #8b5cf6;
+  stroke: #A461D8;
   stroke-width: 3;
 }
 
@@ -188,10 +188,10 @@
 
 @keyframes pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+    box-shadow: 0 0 0 0 rgba(0, 98, 255, 0.7);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+    box-shadow: 0 0 0 10px rgba(0, 98, 255, 0);
   }
 }
 

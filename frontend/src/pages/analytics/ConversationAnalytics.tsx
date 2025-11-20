@@ -27,16 +27,10 @@ import { analyticsService } from '@/services';
 import Spinner from '@/components/ui/Spinner';
 import { DateRangeSelector, DateRange } from '@/components/analytics/DateRangeSelector';
 import { ExportButton } from '@/components/analytics/ExportButton';
-import { pageVariants, cardVariants } from '@/lib/motion-variants';
+import { pageVariants, cardVariants} from '@/lib/motion-variants';
+import { CHART_COLORS } from '@/lib/theme-colors';
 
-const COLORS = {
-  primary: '#8b5cf6',
-  secondary: '#06b6d4',
-  accent: '#f59e0b',
-  success: '#3b82f6',
-  danger: '#f43f5e',
-  warning: '#eab308',
-};
+const COLORS = CHART_COLORS;
 
 const STATUS_COLORS = {
   open: COLORS.primary,

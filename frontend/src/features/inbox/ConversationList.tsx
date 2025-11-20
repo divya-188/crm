@@ -132,7 +132,7 @@ export const ConversationList = ({
               <motion.div
                 key={conversation.id}
                 variants={listItemVariants}
-                whileHover={{ backgroundColor: '#f8fafc' }}
+                whileHover={{ backgroundColor: 'rgb(248, 250, 252)' }}
                 onClick={() => onSelectConversation(conversation)}
                 className={cn(
                   'cursor-pointer transition-colors',

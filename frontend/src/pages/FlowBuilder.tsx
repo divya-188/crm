@@ -440,7 +440,7 @@ const FlowBuilderContent: React.FC = () => {
             ...node.style,
             opacity: isInPath ? 1 : 0.3,
             boxShadow: isCurrent
-              ? '0 0 0 3px rgba(139, 92, 246, 0.5)'
+              ? '0 0 0 3px rgba(0, 98, 255, 0.5)'
               : undefined,
           },
         };
