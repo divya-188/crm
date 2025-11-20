@@ -4,83 +4,122 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary - Deep Purple/Indigo
+        // Primary - Blue (#0062FF)
         primary: {
-          50: '#f5f3ff',
-          100: '#ede9fe',
-          200: '#ddd6fe',
-          300: '#c4b5fd',
-          400: '#a78bfa',
-          500: '#8b5cf6',
-          600: '#7c3aed',
-          700: '#6d28d9',
-          800: '#5b21b6',
-          900: '#4c1d95',
+          50: '#e6f0ff',
+          100: '#cce0ff',
+          200: '#99c2ff',
+          300: '#66a3ff',
+          400: '#3385ff',
+          500: '#0062FF', // Main brand color
+          600: '#0056e6',
+          700: '#0049cc',
+          800: '#003db3',
+          900: '#003099',
         },
-        // Secondary - Cyan/Teal
+        // Secondary - Light Blue (#50B5FF)
         secondary: {
-          50: '#ecfeff',
-          100: '#cffafe',
-          200: '#a5f3fc',
-          300: '#67e8f9',
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
-          700: '#0e7490',
-          800: '#155e75',
-          900: '#164e63',
+          50: '#e6f5ff',
+          100: '#cceaff',
+          200: '#99d6ff',
+          300: '#66c1ff',
+          400: '#50B5FF', // Secondary color
+          500: '#33adff',
+          600: '#1a9fe6',
+          700: '#0091cc',
+          800: '#0083b3',
+          900: '#007599',
         },
-        // Accent - Amber/Orange
+        // Accent - Yellow (#FFC542)
         accent: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
+          50: '#fff9e6',
+          100: '#fff3cc',
+          200: '#ffe799',
+          300: '#ffdb66',
+          400: '#ffcf33',
+          500: '#FFC542', // Accent color
+          600: '#e6b03b',
+          700: '#cc9b34',
+          800: '#b3862d',
+          900: '#997126',
         },
-        // Success - Blue
+        // Success - Green (#3DD598)
         success: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#e6f9f2',
+          100: '#ccf3e5',
+          200: '#99e7cb',
+          300: '#66dbb1',
+          400: '#3DD598', // Success color
+          500: '#33cf8a',
+          600: '#2eb97c',
+          700: '#29a36e',
+          800: '#248d60',
+          900: '#1f7752',
         },
-        // Danger - Rose/Pink
+        // Danger - Red (#FC5A5A)
         danger: {
-          50: '#fff1f2',
-          100: '#ffe4e6',
-          200: '#fecdd3',
-          300: '#fda4af',
-          400: '#fb7185',
-          500: '#f43f5e',
-          600: '#e11d48',
-          700: '#be123c',
-          800: '#9f1239',
-          900: '#881337',
+          50: '#ffebeb',
+          100: '#ffd6d6',
+          200: '#ffadad',
+          300: '#ff8585',
+          400: '#ff5c5c',
+          500: '#FC5A5A', // Danger color
+          600: '#e35151',
+          700: '#ca4848',
+          800: '#b13f3f',
+          900: '#983636',
         },
-        // Warning - Yellow
+        // Warning - Orange (#FF974A)
         warning: {
-          50: '#fefce8',
-          100: '#fef9c3',
-          200: '#fef08a',
-          300: '#fde047',
-          400: '#facc15',
-          500: '#eab308',
-          600: '#ca8a04',
-          700: '#a16207',
-          800: '#854d0e',
-          900: '#713f12',
+          50: '#fff3e6',
+          100: '#ffe7cc',
+          200: '#ffcf99',
+          300: '#ffb766',
+          400: '#ff9f33',
+          500: '#FF974A', // Warning color
+          600: '#e68842',
+          700: '#cc793a',
+          800: '#b36a32',
+          900: '#995b2a',
+        },
+        // Info - Light Green (#82C43C)
+        info: {
+          50: '#f2f9e9',
+          100: '#e5f3d3',
+          200: '#cbe7a7',
+          300: '#b1db7b',
+          400: '#97cf4f',
+          500: '#82C43C', // Info/Light Green color
+          600: '#75b036',
+          700: '#689c30',
+          800: '#5b882a',
+          900: '#4e7424',
+        },
+        // Purple (#A461D8)
+        purple: {
+          50: '#f5edfb',
+          100: '#ebdbf7',
+          200: '#d7b7ef',
+          300: '#c393e7',
+          400: '#af6fdf',
+          500: '#A461D8', // Purple color
+          600: '#9457c2',
+          700: '#844dac',
+          800: '#744396',
+          900: '#643980',
+        },
+        // Pink (#FF9AD5)
+        pink: {
+          50: '#fff0f8',
+          100: '#ffe0f1',
+          200: '#ffc1e3',
+          300: '#ffa2d5',
+          400: '#ff83c7',
+          500: '#FF9AD5', // Pink color
+          600: '#e68bc0',
+          700: '#cc7cab',
+          800: '#b36d96',
+          900: '#995e81',
         },
         // Neutral - Slate
         neutral: {
@@ -97,8 +136,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Roboto', 'system-ui', 'sans-serif'],
         display: ['Poppins', 'sans-serif'],
+        body: ['Roboto', 'sans-serif'],
       },
       boxShadow: {
         soft: '0 2px 15px -3px rgba(139, 92, 246, 0.1), 0 10px 20px -2px rgba(139, 92, 246, 0.04)',
@@ -113,7 +153,6 @@ export default {
         'pulse-soft': 'pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         shimmer: 'shimmer 2s linear infinite',
         'bounce-soft': 'bounceSoft 1s ease-in-out infinite',
-        'border-beam': 'border-beam calc(var(--duration)*1s) infinite linear',
       },
       keyframes: {
         fadeIn: {
