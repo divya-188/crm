@@ -285,7 +285,7 @@ const TemplateCreationWizard: React.FC<TemplateCreationWizardProps> = ({
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
       {/* Header */}
-      <div className="relative bg-gradient-to-r from-primary-50 to-primary-50 dark:from-primary-900/10 dark:to-purple-900/10 px-8 py-6 border-b border-primary-100 dark:border-primary-800">
+      <div className="relative bg-gradient-to-r from-primary-50 to-primary-50 dark:from-primary-900/10 dark:to-primary-900/10 px-8 py-6 border-b border-primary-100 dark:border-primary-800">
         <button
           onClick={onCancel}
           className="absolute top-6 right-6 p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"

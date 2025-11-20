@@ -401,7 +401,7 @@ const ApiKeyInlineForm: React.FC<ApiKeyInlineFormProps> = ({
           <Button
             type="submit"
             disabled={isLoading}
-            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-purple-700 hover:to-purple-800"
+            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800"
           >
             {isLoading ? (
               <>

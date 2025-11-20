@@ -87,7 +87,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
             opacity: [0.08, 0.12, 0.08],
           }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-300 rounded-full blur-3xl"
+          className="absolute -bottom-24 -left-24 w-64 h-64 bg-primary-300 rounded-full blur-3xl"
         />
 
         <div className="relative z-10">

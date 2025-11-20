@@ -545,7 +545,7 @@ export const BestPracticesPanel: React.FC = () => {
       </CollapsibleSection>
 
       {/* Meta Policy Updates */}
-      <div className="rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 p-4 border border-primary-200">
+      <div className="rounded-lg bg-gradient-to-r from-primary-50 to-info-50 p-4 border border-primary-200">
         <div className="flex items-start space-x-3">
           <Sparkles className="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5" />
           <div>

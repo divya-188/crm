@@ -171,7 +171,7 @@ export function PersonalizationStep({ data, updateData }: StepProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-gradient-to-r from-purple-50 to-pink-50 border border-primary-200 rounded-xl p-4"
+            className="bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-xl p-4"
           >
             <h4 className="font-semibold text-primary-900 mb-3">✨ Best Practices</h4>
             <ul className="text-sm text-primary-800 space-y-2">
