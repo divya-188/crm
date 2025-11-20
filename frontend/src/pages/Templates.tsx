@@ -28,7 +28,7 @@ import { templatesService } from '@/services/templates.service';
 import { Template } from '@/types/models.types';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { BorderBeam } from '@/components/magicui/border-beam';
+import { BorderBeam } from '@/components/ui/BorderBeam';
 import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/lib/toast-system';
