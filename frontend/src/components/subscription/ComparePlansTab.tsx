@@ -43,7 +43,7 @@ export default function ComparePlansTab({
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full"
+          className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full"
         />
       </div>
     );
@@ -132,15 +132,15 @@ export default function ComparePlansTab({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 rounded-full mb-4 border border-violet-100"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-50 rounded-full mb-4 border border-primary-100"
           >
             <motion.div
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             >
-              <Star className="w-3.5 h-3.5 text-violet-600" />
+              <Star className="w-3.5 h-3.5 text-primary-600" />
             </motion.div>
-            <span className="text-xs font-medium text-violet-700">
+            <span className="text-xs font-medium text-primary-700">
               Simple, transparent pricing
             </span>
           </motion.div>
@@ -188,7 +188,7 @@ export default function ComparePlansTab({
                 }}
                 className={`relative bg-white rounded-2xl overflow-hidden group ${
                   isPopular 
-                    ? 'shadow-lg ring-2 ring-violet-500' 
+                    ? 'shadow-lg ring-2 ring-primary-500' 
                     : current
                     ? 'shadow-lg ring-2 ring-blue-500'
                     : 'shadow-md hover:shadow-lg border border-gray-200'
@@ -217,7 +217,7 @@ export default function ComparePlansTab({
                       initial={{ scale: 0, y: 10 }}
                       animate={{ scale: 1, y: 0 }}
                       transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
-                      className="bg-violet-600 text-white px-3 py-1 rounded-full shadow-md flex items-center gap-1.5"
+                      className="bg-primary-600 text-white px-3 py-1 rounded-full shadow-md flex items-center gap-1.5"
                     >
                       <Crown className="w-3 h-3" />
                       <span className="text-xs font-medium">Most Popular</span>
@@ -306,7 +306,7 @@ export default function ComparePlansTab({
                         }}
                         className={`relative w-full h-10 rounded-lg font-medium text-sm shadow-sm transition-all ${
                           isPopular
-                            ? 'bg-violet-600 hover:bg-violet-700 text-white'
+                            ? 'bg-primary-600 hover:bg-primary-700 text-white'
                             : 'bg-gray-900 hover:bg-gray-800 text-white'
                         }`}
                       >
@@ -352,7 +352,7 @@ export default function ComparePlansTab({
                           className="flex items-center justify-between group/feature"
                         >
                           <div className="flex items-center gap-2.5">
-                            <FeatureIcon className="w-4 h-4 text-gray-400 group-hover/feature:text-violet-600 transition-colors" />
+                            <FeatureIcon className="w-4 h-4 text-gray-400 group-hover/feature:text-primary-600 transition-colors" />
                             <span className="text-sm text-gray-600 font-normal">{feature.label}</span>
                           </div>
                           {isBoolean ? (
@@ -360,7 +360,7 @@ export default function ComparePlansTab({
                               <motion.div 
                                 whileHover={{ scale: 1.1 }}
                                 transition={{ duration: 0.2 }}
-                                className="w-4 h-4 rounded-full bg-violet-600 flex items-center justify-center"
+                                className="w-4 h-4 rounded-full bg-primary-600 flex items-center justify-center"
                               >
                                 <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
                               </motion.div>
@@ -426,7 +426,7 @@ export default function ComparePlansTab({
                       <th
                         key={plan.id}
                         className={`px-8 py-4 text-center text-xs font-medium uppercase tracking-wide ${
-                          isPopular ? 'bg-violet-50 text-violet-700' :
+                          isPopular ? 'bg-primary-50 text-primary-700' :
                           current ? 'bg-blue-50 text-blue-700' :
                           'bg-gray-50 text-gray-700'
                         }`}
@@ -434,7 +434,7 @@ export default function ComparePlansTab({
                         <div className="flex flex-col items-center gap-1.5">
                           <span className="text-sm font-medium">{plan.name}</span>
                           {isPopular && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-600 text-white text-xs rounded-full">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-600 text-white text-xs rounded-full">
                               <Crown className="w-2.5 h-2.5" />
                               Popular
                             </span>
@@ -465,7 +465,7 @@ export default function ComparePlansTab({
                     >
                       <td className="px-8 py-4 sticky left-0 bg-white group-hover/row:bg-gray-50/50 z-10">
                         <div className="flex items-center gap-3">
-                          <FeatureIcon className="w-4 h-4 text-gray-400 group-hover/row:text-violet-600 transition-colors" />
+                          <FeatureIcon className="w-4 h-4 text-gray-400 group-hover/row:text-primary-600 transition-colors" />
                           <span className="font-normal text-gray-700 text-sm">{feature.label}</span>
                         </div>
                       </td>
@@ -480,7 +480,7 @@ export default function ComparePlansTab({
                           <td 
                             key={plan.id} 
                             className={`px-8 py-4 text-center ${
-                              isPopular ? 'bg-violet-50/30' :
+                              isPopular ? 'bg-primary-50/30' :
                               current ? 'bg-blue-50/30' :
                               ''
                             }`}
@@ -490,7 +490,7 @@ export default function ComparePlansTab({
                                 <motion.div 
                                   whileHover={{ scale: 1.1 }}
                                   transition={{ duration: 0.2 }}
-                                  className="inline-flex w-5 h-5 rounded-full bg-violet-600 items-center justify-center"
+                                  className="inline-flex w-5 h-5 rounded-full bg-primary-600 items-center justify-center"
                                 >
                                   <Check className="w-3 h-3 text-white" strokeWidth={2.5} />
                                 </motion.div>

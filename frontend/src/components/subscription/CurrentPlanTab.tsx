@@ -67,7 +67,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-        className="relative bg-gradient-to-br from-violet-50/50 via-white to-primary-50/30 rounded-2xl shadow-lg p-8 border border-violet-100/50 overflow-hidden group"
+        className="relative bg-gradient-to-br from-primary-50/50 via-white to-primary-50/30 rounded-2xl shadow-lg p-8 border border-primary-100/50 overflow-hidden group"
       >
         {/* Animated Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-100/20 via-transparent to-primary-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -79,7 +79,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
             opacity: [0.1, 0.15, 0.1],
           }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-24 -right-24 w-64 h-64 bg-violet-300 rounded-full blur-3xl"
+          className="absolute -top-24 -right-24 w-64 h-64 bg-primary-300 rounded-full blur-3xl"
         />
         <motion.div
           animate={{
@@ -137,14 +137,14 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
             </motion.div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 pt-6 border-t border-violet-100/50">
+          <div className="grid grid-cols-2 gap-6 pt-6 border-t border-primary-100/50">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               className="group/date"
             >
-              <div className="flex items-center gap-2 text-gray-500 mb-2 group-hover/date:text-violet-600 transition-colors">
+              <div className="flex items-center gap-2 text-gray-500 mb-2 group-hover/date:text-primary-600 transition-colors">
                 <Calendar className="w-4 h-4" />
                 <span className="text-xs font-medium uppercase tracking-wide">Started</span>
               </div>
@@ -158,7 +158,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
               transition={{ delay: 0.5 }}
               className="group/date"
             >
-              <div className="flex items-center gap-2 text-gray-500 mb-2 group-hover/date:text-violet-600 transition-colors">
+              <div className="flex items-center gap-2 text-gray-500 mb-2 group-hover/date:text-primary-600 transition-colors">
                 <Calendar className="w-4 h-4" />
                 <span className="text-xs font-medium uppercase tracking-wide">Renews</span>
               </div>
@@ -216,7 +216,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
                   >
                     <td className="px-8 py-4 bg-white group-hover/row:bg-gray-50/50">
                       <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4 text-gray-400 group-hover/row:text-violet-600 transition-colors" />
+                        <Icon className="w-4 h-4 text-gray-400 group-hover/row:text-primary-600 transition-colors" />
                         <span className="font-normal text-gray-700 text-sm">{feature.label}</span>
                       </div>
                     </td>
@@ -236,7 +236,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
                             animate={{ width: `${Math.min(percentage, 100)}%` }}
                             transition={{ duration: 0.5, delay: 0.3 + index * 0.03 }}
                             className={`h-full rounded-full ${
-                              isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-violet-500 to-primary-500'
+                              isNearLimit ? 'bg-red-500' : 'bg-gradient-to-r from-primary-500 to-primary-500'
                             }`}
                           />
                         </div>
