@@ -28,7 +28,7 @@ import { templatesService } from '@/services/templates.service';
 import { Template } from '@/types/models.types';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { BorderBeam } from '@/components/ui/BorderBeam';
+import { BorderBeam } from '@/components/magicui/border-beam';
 import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/lib/toast-system';
@@ -584,7 +584,7 @@ export default function Templates() {
                     }}
                     className="group h-full"
                   >
-                    <Card className="p-6 h-full shadow-md hover:shadow-2xl transition-all duration-500 ease-out border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary-400 dark:hover:border-primary-600 relative overflow-hidden bg-white dark:bg-neutral-900 rounded-xl">
+                    <Card className="p-6 h-full shadow-md hover:shadow-2xl transition-all duration-500 ease-out border-0 relative overflow-hidden bg-white dark:bg-neutral-900 rounded-xl">
                       {/* Gradient overlay on hover */}
                       <div className="absolute inset-0 bg-gradient-to-br from-primary-50/0 via-primary-50/0 to-primary-100/0 dark:from-primary-900/0 dark:via-primary-900/0 dark:to-primary-800/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                       
@@ -710,12 +710,12 @@ export default function Templates() {
                             {template.name.length > 50 && '...'}
                           </h3>
 
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                          <div className="flex items-center justify-between gap-3 mb-3">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 flex-1 justify-center">
                               <Globe className="w-3 h-3" />
                               {template.language.replace('_', ' ').toUpperCase()}
                             </span>
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium flex-1 justify-center ${
                               statusInfo.color === 'success' ? 'bg-success-100 dark:bg-success-900/20 text-success-700 dark:text-success-400' :
                               statusInfo.color === 'warning' ? 'bg-warning-100 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400' :
                               statusInfo.color === 'danger' ? 'bg-danger-100 dark:bg-danger-900/20 text-danger-700 dark:text-danger-400' :
@@ -724,23 +724,25 @@ export default function Templates() {
                               <StatusIcon className="w-3 h-3" />
                               {statusInfo.label}
                             </span>
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${categoryInfo.color}`}>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium flex-1 justify-center ${categoryInfo.color}`}>
                               <Tag className="w-3 h-3" />
                               {categoryInfo.label}
                             </span>
                           </div>
 
                           {/* Creation Date */}
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
                             Created on {formatDate(template.createdAt)}
                           </div>
 
                           {/* Content Preview */}
-                          <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 mb-3">
-                            <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
-                              {template.content}
-                            </p>
-                          </div>
+                          {(template.content || (template as any).components?.body?.text) && (
+                            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 mb-4">
+                              <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
+                                {template.content || (template as any).components?.body?.text || 'No content available'}
+                              </p>
+                            </div>
+                          )}
 
                           {/* Variables */}
                           {template.variables && template.variables.length > 0 && (
@@ -772,53 +774,50 @@ export default function Templates() {
                         </div>
 
                         {/* Footer with Action Buttons */}
-                        <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                        <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-neutral-700">
                           {/* Action Buttons */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => handlePreviewTemplate(template)}
-                                className="group/preview relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 overflow-hidden"
-                              >
-                                <Eye className="w-4 h-4 flex-shrink-0" />
-                                <span className="max-w-0 opacity-0 group-hover/preview:max-w-xs group-hover/preview:opacity-100 group-hover/preview:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
-                                  Preview
-                                </span>
-                              </button>
+                          <div className="flex items-center gap-2">
+                            {/* Left buttons - expand RIGHT */}
+                            <button
+                              onClick={() => handlePreviewTemplate(template)}
+                              className="group/preview relative flex items-center flex-1 h-10 px-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 overflow-visible justify-center hover:justify-start hover:z-10 transition-[background-color,color,justify-content] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                            >
+                              <Eye className="w-4 h-4 flex-shrink-0" />
+                              <span className="max-w-0 opacity-0 group-hover/preview:max-w-[100px] group-hover/preview:opacity-100 ml-0 group-hover/preview:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-[max-width,opacity,margin] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]">
+                                Preview
+                              </span>
+                            </button>
 
-                              <button
-                                onClick={() => handleRefreshStatus(template)}
-                                className="group/refresh relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 overflow-hidden"
-                              >
-                                <RefreshCw className="w-4 h-4 flex-shrink-0" />
-                                <span className="max-w-0 opacity-0 group-hover/refresh:max-w-xs group-hover/refresh:opacity-100 group-hover/refresh:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
-                                  Refresh
-                                </span>
-                              </button>
+                            <button
+                              onClick={() => handleRefreshStatus(template)}
+                              className="group/refresh relative flex items-center flex-1 h-10 px-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 overflow-visible justify-center hover:justify-start hover:z-10 transition-[background-color,color,justify-content] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                            >
+                              <RefreshCw className="w-4 h-4 flex-shrink-0" />
+                              <span className="max-w-0 opacity-0 group-hover/refresh:max-w-[100px] group-hover/refresh:opacity-100 ml-0 group-hover/refresh:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-[max-width,opacity,margin] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]">
+                                Refresh
+                              </span>
+                            </button>
 
-                              <button
-                                onClick={() => navigate(`/templates/${template.id}/analytics`)}
-                                className="group/analytics relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 transition-all duration-300 overflow-hidden"
-                              >
-                                <BarChart3 className="w-4 h-4 flex-shrink-0" />
-                                <span className="max-w-0 opacity-0 group-hover/analytics:max-w-xs group-hover/analytics:opacity-100 group-hover/analytics:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
-                                  Analytics
-                                </span>
-                              </button>
+                            {/* Right buttons - expand LEFT */}
+                            <button
+                              onClick={() => navigate(`/templates/${template.id}/analytics`)}
+                              className="group/analytics relative flex items-center flex-row-reverse flex-1 h-10 px-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 overflow-visible justify-center hover:justify-start hover:z-10 transition-[background-color,color,justify-content] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                            >
+                              <BarChart3 className="w-4 h-4 flex-shrink-0" />
+                              <span className="max-w-0 opacity-0 group-hover/analytics:max-w-[100px] group-hover/analytics:opacity-100 mr-0 group-hover/analytics:mr-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-[max-width,opacity,margin] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]">
+                                Analytics
+                              </span>
+                            </button>
 
-                              <button
-                                onClick={() => handleDuplicateTemplate(template)}
-                                className="group/duplicate relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-300 overflow-hidden"
-                              >
-                                <Copy className="w-4 h-4 flex-shrink-0" />
-                                <span className="max-w-0 opacity-0 group-hover/duplicate:max-w-xs group-hover/duplicate:opacity-100 group-hover/duplicate:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
-                                  Duplicate
-                                </span>
-                              </button>
-                            </div>
-                            <span className="text-xs text-neutral-400 dark:text-neutral-500">
-                              {formatDate(template.createdAt)}
-                            </span>
+                            <button
+                              onClick={() => handleDuplicateTemplate(template)}
+                              className="group/duplicate relative flex items-center flex-row-reverse flex-1 h-10 px-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 overflow-visible justify-center hover:justify-start hover:z-10 transition-[background-color,color,justify-content] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                            >
+                              <Copy className="w-4 h-4 flex-shrink-0" />
+                              <span className="max-w-0 opacity-0 group-hover/duplicate:max-w-[100px] group-hover/duplicate:opacity-100 mr-0 group-hover/duplicate:mr-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-[max-width,opacity,margin] duration-[600ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]">
+                                Duplicate
+                              </span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -829,9 +828,8 @@ export default function Templates() {
                         duration={12}
                         delay={0}
                         borderWidth={1.5}
-                        colorFrom="transparent"
-                        colorVia="rgb(124, 58, 237)"
-                        colorTo="transparent"
+                        colorFrom="#7c3aed"
+                        colorTo="#a78bfa"
                         className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                       />
                     </Card>
