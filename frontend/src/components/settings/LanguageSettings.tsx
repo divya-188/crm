@@ -4,7 +4,7 @@ import Card from '../ui/Card';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import settingsService from '../../services/settings.service';
 import { Globe } from 'lucide-react';
 
@@ -64,10 +64,10 @@ export default function LanguageSettings() {
     mutationFn: settingsService.updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast.success('Language and timezone settings updated');
+      Toast.success('Language and timezone settings updated');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update settings');
+      Toast.error(error.response?.data?.message || 'Failed to update settings');
     },
   });
 

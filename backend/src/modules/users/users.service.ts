@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { SecuritySettingsService } from '../super-admin/services/security-settings.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @Inject(forwardRef(() => SecuritySettingsService))
+    private securitySettingsService: SecuritySettingsService,
   ) {}
 
   async create(userData: Partial<User>): Promise<User> {
@@ -177,6 +180,12 @@ export class UsersService {
     const isPasswordValid = await this.comparePassword(currentPassword, user.passwordHash);
     if (!isPasswordValid) {
       return false;
+    }
+
+    // Validate new password against security policy
+    const passwordValidation = await this.securitySettingsService.validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      throw new BadRequestException(passwordValidation.errors.join(', '));
     }
 
     const hashedPassword = await this.hashPassword(newPassword);

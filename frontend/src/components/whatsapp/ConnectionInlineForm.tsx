@@ -5,7 +5,7 @@ import { Save, Loader2, Smartphone, Cloud, X, Settings as SettingsIcon } from 'l
 import { whatsappService, CreateConnectionDto, WhatsAppConnection } from '../../services/whatsapp.service';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface ConnectionInlineFormProps {
   onSuccess: () => void;
@@ -47,12 +47,12 @@ const ConnectionInlineForm: React.FC<ConnectionInlineFormProps> = ({
   const createMutation = useMutation({
     mutationFn: (data: CreateConnectionDto) => whatsappService.createConnection(data),
     onSuccess: () => {
-      toast.success('WhatsApp connection created successfully');
+      Toast.success('WhatsApp connection created successfully');
       queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create connection');
+      Toast.error(error.response?.data?.message || 'Failed to create connection');
     },
   });
 
@@ -60,12 +60,12 @@ const ConnectionInlineForm: React.FC<ConnectionInlineFormProps> = ({
     mutationFn: (data: Partial<CreateConnectionDto>) => 
       whatsappService.updateConnection(connection!.id, data),
     onSuccess: () => {
-      toast.success('WhatsApp connection updated successfully');
+      Toast.success('WhatsApp connection updated successfully');
       queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update connection');
+      Toast.error(error.response?.data?.message || 'Failed to update connection');
     },
   });
 
@@ -73,17 +73,17 @@ const ConnectionInlineForm: React.FC<ConnectionInlineFormProps> = ({
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      toast.error('Connection name is required');
+      Toast.error('Connection name is required');
       return;
     }
 
     if (formData.type === 'meta_api') {
       if (!formData.phoneNumberId?.trim()) {
-        toast.error('Phone Number ID is required for Meta API connections');
+        Toast.error('Phone Number ID is required for Meta API connections');
         return;
       }
       if (!isEditMode && !formData.accessToken?.trim()) {
-        toast.error('Access Token is required for Meta API connections');
+        Toast.error('Access Token is required for Meta API connections');
         return;
       }
     }

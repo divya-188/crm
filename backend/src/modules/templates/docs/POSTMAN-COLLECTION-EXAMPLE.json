@@ -1,0 +1,341 @@
+{
+  "info": {
+    "name": "WhatsApp Templates API",
+    "description": "Complete API collection for WhatsApp Templates management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.yourapp.com/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "template_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your_password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Template CRUD",
+      "item": [
+        {
+          "name": "Create Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"order_confirmation_v1\",\n  \"displayName\": \"Order Confirmation\",\n  \"category\": \"TRANSACTIONAL\",\n  \"language\": \"en_US\",\n  \"description\": \"Confirms customer order\",\n  \"components\": {\n    \"header\": {\n      \"type\": \"TEXT\",\n      \"text\": \"Order Confirmed\"\n    },\n    \"body\": {\n      \"text\": \"Hi {{1}}, your order {{2}} is confirmed. Total: {{3}}\",\n      \"placeholders\": [\n        {\"index\": 1, \"example\": \"John\"},\n        {\"index\": 2, \"example\": \"#12345\"},\n        {\"index\": 3, \"example\": \"$99.99\"}\n      ]\n    },\n    \"footer\": {\n      \"text\": \"Reply STOP to unsubscribe\"\n    },\n    \"buttons\": [\n      {\n        \"type\": \"URL\",\n        \"text\": \"Track Order\",\n        \"url\": \"https://example.com/track/{{1}}\"\n      }\n    ]\n  },\n  \"sampleValues\": {\n    \"1\": \"John\",\n    \"2\": \"#12345\",\n    \"3\": \"$99.99\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/templates",
+              "host": ["{{base_url}}"],
+              "path": ["templates"]
+            }
+          }
+        },
+        {
+          "name": "Get All Templates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates?page=1&limit=20&status=approved&sortBy=usageCount&sortOrder=DESC",
+              "host": ["{{base_url}}"],
+              "path": ["templates"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "status", "value": "approved"},
+                {"key": "sortBy", "value": "usageCount"},
+                {"key": "sortOrder", "value": "DESC"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Template by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Template",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Updated Order Confirmation\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}?createNewVersion=true",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}"],
+              "query": [
+                {"key": "createNewVersion", "value": "true"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Duplicate Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newName\": \"order_confirmation_v2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/duplicate",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "duplicate"]
+            }
+          }
+        },
+        {
+          "name": "Archive Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"No longer needed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/archive",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "archive"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation & Metadata",
+      "item": [
+        {
+          "name": "Validate Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"test_template\",\n  \"category\": \"TRANSACTIONAL\",\n  \"language\": \"en_US\",\n  \"components\": {\n    \"body\": {\n      \"text\": \"Hello {{1}}, your code is {{2}}\",\n      \"placeholders\": [\n        {\"index\": 1, \"example\": \"John\"},\n        {\"index\": 2, \"example\": \"123456\"}\n      ]\n    }\n  },\n  \"sampleValues\": {\n    \"1\": \"John\",\n    \"2\": \"123456\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/templates/validate",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "validate"]
+            }
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/categories",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Languages",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/languages",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "languages"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submission & Approval",
+      "item": [
+        {
+          "name": "Submit Template",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/submit",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "submit"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Status",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/refresh-status",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "refresh-status"]
+            }
+          }
+        },
+        {
+          "name": "Get Versions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/versions",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "versions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preview & Testing",
+      "item": [
+        {
+          "name": "Get Preview",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/preview",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "preview"]
+            }
+          }
+        },
+        {
+          "name": "Send Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"placeholderValues\": {\n    \"1\": \"Alice\",\n    \"2\": \"#67890\",\n    \"3\": \"$149.99\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/test",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "test"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Template Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/analytics?startDate=2024-01-01&endDate=2024-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "analytics"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-01-31"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Analytics Summary",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/templates/analytics/summary?startDate=2024-01-01&endDate=2024-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "analytics", "summary"],
+              "query": [
+                {"key": "startDate", "value": "2024-01-01"},
+                {"key": "endDate", "value": "2024-01-31"}
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

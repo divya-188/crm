@@ -7,7 +7,7 @@ import Spinner from '@/components/ui/Spinner';
 import { SegmentBuilder } from './SegmentBuilder';
 import { ContactSegment, ContactSegmentCriteria } from '@/types/models.types';
 import { contactsService } from '@/services';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface SegmentModalProps {
   isOpen: boolean;
@@ -48,7 +48,7 @@ export const SegmentModal = ({
 
   const validateConditions = () => {
     if (criteria.conditions.length === 0) {
-      toast.error('Please add at least one condition');
+      Toast.error('Please add at least one condition');
       return false;
     }
 
@@ -60,11 +60,11 @@ export const SegmentModal = ({
       if (needsValue) {
         if (Array.isArray(condition.value)) {
           if (condition.value.length === 0) {
-            toast.error(`Condition ${i + 1}: Please enter at least one value`);
+            Toast.error(`Condition ${i + 1}: Please enter at least one value`);
             return false;
           }
         } else if (!condition.value || condition.value.toString().trim() === '') {
-          toast.error(`Condition ${i + 1}: Please enter a value`);
+          Toast.error(`Condition ${i + 1}: Please enter a value`);
           return false;
         }
       }
@@ -82,9 +82,9 @@ export const SegmentModal = ({
     try {
       const result = await contactsService.previewSegment(criteria);
       setPreviewCount(result.count);
-      toast.success(`Found ${result.count} matching contacts`);
+      Toast.success(`Found ${result.count} matching contacts`);
     } catch (error) {
-      toast.error('Failed to preview segment');
+      Toast.error('Failed to preview segment');
       console.error('Preview error:', error);
     } finally {
       setIsPreviewing(false);
@@ -95,7 +95,7 @@ export const SegmentModal = ({
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error('Please enter a segment name');
+      Toast.error('Please enter a segment name');
       return;
     }
 
@@ -113,16 +113,16 @@ export const SegmentModal = ({
 
       if (segment) {
         await contactsService.updateSegment(segment.id, data);
-        toast.success('Segment updated successfully');
+        Toast.success('Segment updated successfully');
       } else {
         await contactsService.createSegment(data);
-        toast.success('Segment created successfully');
+        Toast.success('Segment created successfully');
       }
 
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save segment');
+      Toast.error(error.response?.data?.message || 'Failed to save segment');
       console.error('Save error:', error);
     } finally {
       setIsLoading(false);

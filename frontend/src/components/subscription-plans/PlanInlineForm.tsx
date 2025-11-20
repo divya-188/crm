@@ -7,7 +7,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Textarea from '../ui/Textarea';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface PlanInlineFormProps {
   onSuccess: () => void;
@@ -74,33 +74,33 @@ const PlanInlineForm: React.FC<PlanInlineFormProps> = ({
   const createMutation = useMutation({
     mutationFn: (data: CreatePlanData) => subscriptionPlansService.create(data),
     onSuccess: () => {
-      toast.success('Plan created successfully');
+      Toast.success('Plan created successfully');
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create plan');
+      Toast.error(error.response?.data?.message || 'Failed to create plan');
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: CreatePlanData) => subscriptionPlansService.update(plan!.id, data),
     onSuccess: () => {
-      toast.success('Plan updated successfully');
+      Toast.success('Plan updated successfully');
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update plan');
+      Toast.error(error.response?.data?.message || 'Failed to update plan');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      toast.error('Plan name is required');
+      Toast.error('Plan name is required');
       return;
     }
     if (formData.price < 0) {
-      toast.error('Price must be a positive number');
+      Toast.error('Price must be a positive number');
       return;
     }
     if (isEditMode) {

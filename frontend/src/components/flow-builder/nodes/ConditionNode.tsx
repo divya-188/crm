@@ -32,7 +32,7 @@ const ConditionNode: React.FC<NodeProps<ConditionNodeData>> = ({ data, selected,
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-secondary-500 !border-2 !border-white"
+        className="!w-2 !h-2 !bg-secondary-500 !border-2 !border-white"
       />
       
       <motion.div
@@ -43,30 +43,48 @@ const ConditionNode: React.FC<NodeProps<ConditionNodeData>> = ({ data, selected,
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
         className={cn(
-          'px-4 py-3 rounded-lg border-2 bg-white shadow-md min-w-[220px] max-w-[280px] transition-all',
+          'flex items-start gap-3 p-3 rounded-lg border bg-white cursor-pointer hover:shadow-soft transition-all group',
           selected
-            ? 'border-secondary-500 shadow-glow-secondary ring-2 ring-secondary-200'
+            ? 'border-secondary-500 shadow-soft ring-2 ring-secondary-200'
             : 'border-neutral-200 hover:border-secondary-300',
           !data.isValid && 'border-warning-400'
         )}
+        style={{
+          borderLeftWidth: '3px',
+          borderLeftColor: '#06b6d4',
+        }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-secondary-100">
-              <GitBranch className="w-4 h-4 text-secondary-600" />
-            </div>
-            <span className="font-semibold text-sm text-neutral-900">
-              {data.label}
-            </span>
-          </div>
+        {/* Icon */}
+        <div
+          className="p-2 rounded-lg flex-shrink-0"
+          style={{
+            backgroundColor: '#06b6d415',
+          }}
+        >
+          <GitBranch className="w-4 h-4" style={{ color: '#06b6d4' }} />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-medium text-neutral-900 mb-0.5">
+            {data.label}
+          </h4>
+          <p className="text-xs text-neutral-500 line-clamp-2">
+            {data.condition || 'Click to edit...'}
+          </p>
           
-          {/* Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: isHovered || selected ? 1 : 0, scale: isHovered || selected ? 1 : 0.8 }}
-            className="flex items-center gap-1"
-          >
+          {/* Validation Indicator */}
+          {!data.isValid && (
+            <div className="flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-1 rounded mt-2">
+              <span>⚠</span>
+              <span>Config</span>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons - Only show on hover */}
+        {(isHovered || selected) && (
+          <div className="flex gap-1 flex-shrink-0">
             <button
               onClick={handleConfigure}
               className="p-1 rounded hover:bg-neutral-100 transition-colors"
@@ -81,30 +99,7 @@ const ConditionNode: React.FC<NodeProps<ConditionNodeData>> = ({ data, selected,
             >
               <Trash2 className="w-3.5 h-3.5 text-red-600" />
             </button>
-          </motion.div>
-        </div>
-        
-        {/* Content */}
-        <div className="text-xs text-neutral-600 line-clamp-2 mb-2">
-          {data.condition || 'Click to set condition...'}
-        </div>
-
-        {/* Branch Labels */}
-        <div className="flex items-center justify-between text-xs text-neutral-500 mt-3 pt-2 border-t border-neutral-100">
-          <span className="text-success-600 font-medium">✓ True</span>
-          <span className="text-danger-600 font-medium">✗ False</span>
-        </div>
-
-        {/* Validation Indicator */}
-        {!data.isValid && (
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-1 rounded mt-2"
-          >
-            <span className="font-medium">⚠</span>
-            <span>Configuration required</span>
-          </motion.div>
+          </div>
         )}
       </motion.div>
       
@@ -114,14 +109,14 @@ const ConditionNode: React.FC<NodeProps<ConditionNodeData>> = ({ data, selected,
         position={Position.Bottom}
         id="true"
         style={{ left: '30%' }}
-        className="!w-3 !h-3 !bg-success-500 !border-2 !border-white"
+        className="!w-2 !h-2 !bg-success-500 !border-2 !border-white"
       />
       <Handle
         type="source"
         position={Position.Bottom}
         id="false"
         style={{ left: '70%' }}
-        className="!w-3 !h-3 !bg-danger-500 !border-2 !border-white"
+        className="!w-2 !h-2 !bg-danger-500 !border-2 !border-white"
       />
     </>
   );

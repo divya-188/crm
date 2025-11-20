@@ -4,7 +4,7 @@ import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import settingsService, { Branding } from '../../services/settings.service';
 import { Palette, Upload } from 'lucide-react';
 
@@ -52,10 +52,10 @@ export default function BrandingSettings() {
     mutationFn: settingsService.updateBranding,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branding'] });
-      toast.success('Branding updated successfully');
+      Toast.success('Branding updated successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update branding');
+      Toast.error(error.response?.data?.message || 'Failed to update branding');
     },
   });
 

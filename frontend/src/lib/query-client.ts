@@ -1,5 +1,5 @@
 import { QueryClient, DefaultOptions } from '@tanstack/react-query';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import { getErrorMessage } from './api-client';
 
 const queryConfig: DefaultOptions = {
@@ -12,7 +12,7 @@ const queryConfig: DefaultOptions = {
   mutations: {
     onError: (error) => {
       const message = getErrorMessage(error);
-      toast.error(message);
+      Toast.error(message);
     },
   },
 };

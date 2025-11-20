@@ -4,7 +4,7 @@ import Card from '../ui/Card';
 import Switch from '../ui/Switch';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import settingsService from '../../services/settings.service';
 import { Bell } from 'lucide-react';
 
@@ -41,10 +41,10 @@ export default function NotificationSettings() {
     mutationFn: settingsService.updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast.success('Notification preferences updated');
+      Toast.success('Notification preferences updated');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update preferences');
+      Toast.error(error.response?.data?.message || 'Failed to update preferences');
     },
   });
 

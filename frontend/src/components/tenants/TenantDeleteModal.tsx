@@ -6,7 +6,7 @@ import { tenantsService, Tenant } from '../../services/tenants.service';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface TenantDeleteModalProps {
   isOpen: boolean;
@@ -26,17 +26,17 @@ const TenantDeleteModal: React.FC<TenantDeleteModalProps> = ({
   const deleteMutation = useMutation({
     mutationFn: () => tenantsService.delete(tenant.id),
     onSuccess: () => {
-      toast.success('Tenant deleted successfully');
+      Toast.success('Tenant deleted successfully');
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete tenant');
+      Toast.error(error.response?.data?.message || 'Failed to delete tenant');
     },
   });
 
   const handleDelete = () => {
     if (confirmText !== tenant.name) {
-      toast.error('Please type the tenant name correctly to confirm');
+      Toast.error('Please type the tenant name correctly to confirm');
       return;
     }
 

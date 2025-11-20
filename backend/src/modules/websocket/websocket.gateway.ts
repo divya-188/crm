@@ -151,4 +151,105 @@ export class WebSocketGatewayService implements OnGatewayConnection, OnGatewayDi
   emitNewConversation(tenantId: string, conversation: any) {
     this.server.to(`tenant:${tenantId}`).emit('conversation:new', conversation);
   }
+
+  // Settings update events
+  emitSettingsUpdate(type: string, data: any, tenantId?: string, userId?: string) {
+    const event = {
+      type,
+      data,
+      updatedBy: userId,
+      timestamp: new Date().toISOString(),
+    };
+
+    if (tenantId) {
+      // Broadcast to specific tenant
+      this.server.to(`tenant:${tenantId}`).emit('settings:updated', event);
+      console.log(`Settings update broadcasted to tenant ${tenantId}:`, type);
+    } else {
+      // Broadcast to all connected clients (platform-wide settings)
+      this.server.emit('settings:updated', event);
+      console.log(`Settings update broadcasted globally:`, type);
+    }
+  }
+
+  emitBrandingUpdate(branding: any, tenantId?: string) {
+    if (tenantId) {
+      // Tenant-specific branding
+      this.server.to(`tenant:${tenantId}`).emit('branding:updated', { branding });
+      console.log(`Branding update broadcasted to tenant ${tenantId}`);
+    } else {
+      // Platform-wide branding
+      this.server.emit('branding:updated', { branding });
+      console.log(`Branding update broadcasted globally`);
+    }
+  }
+
+  emitPaymentSettingsUpdate(settings: any, userId?: string) {
+    this.emitSettingsUpdate('payment', settings, undefined, userId);
+  }
+
+  emitEmailSettingsUpdate(settings: any, userId?: string) {
+    this.emitSettingsUpdate('email', settings, undefined, userId);
+  }
+
+  emitSecuritySettingsUpdate(settings: any, userId?: string) {
+    this.emitSettingsUpdate('security', settings, undefined, userId);
+  }
+
+  emitWhatsAppSettingsUpdate(settings: any, tenantId: string, userId?: string) {
+    this.emitSettingsUpdate('whatsapp', settings, tenantId, userId);
+  }
+
+  emitTeamSettingsUpdate(settings: any, tenantId: string, userId?: string) {
+    this.emitSettingsUpdate('team', settings, tenantId, userId);
+  }
+
+  emitBillingSettingsUpdate(settings: any, tenantId: string, userId?: string) {
+    this.emitSettingsUpdate('billing', settings, tenantId, userId);
+  }
+
+  emitIntegrationsSettingsUpdate(settings: any, tenantId: string, userId?: string) {
+    this.emitSettingsUpdate('integrations', settings, tenantId, userId);
+  }
+
+  emitAvailabilitySettingsUpdate(settings: any, userId: string) {
+    // Broadcast to specific user
+    this.server.to(`user:${userId}`).emit('settings:updated', {
+      type: 'availability',
+      data: settings,
+      timestamp: new Date().toISOString(),
+    });
+    console.log(`Availability settings update broadcasted to user ${userId}`);
+  }
+
+  emitPreferencesSettingsUpdate(settings: any, userId: string) {
+    // Broadcast to specific user
+    this.server.to(`user:${userId}`).emit('settings:updated', {
+      type: 'preferences',
+      data: settings,
+      timestamp: new Date().toISOString(),
+    });
+    console.log(`Preferences settings update broadcasted to user ${userId}`);
+  }
+
+  // Broadcast to all users in a tenant
+  broadcastToTenant(tenantId: string, event: string, data: any) {
+    this.server.to(`tenant:${tenantId}`).emit(event, data);
+  }
+
+  // Broadcast to specific user
+  broadcastToUser(userId: string, event: string, data: any) {
+    this.server.to(`user:${userId}`).emit(event, data);
+  }
+
+  // Get online users count for a tenant
+  getOnlineUsersCount(tenantId: string): number {
+    const room = this.server.sockets.adapter.rooms.get(`tenant:${tenantId}`);
+    return room ? room.size : 0;
+  }
+
+  // Check if user is online
+  isUserOnline(userId: string): boolean {
+    return this.userSockets.has(userId) && this.userSockets.get(userId)!.size > 0;
+  }
 }

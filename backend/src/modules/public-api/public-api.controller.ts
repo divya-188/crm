@@ -19,7 +19,7 @@ import { CampaignsService } from '../campaigns/campaigns.service';
 
 @ApiTags('Public API')
 @ApiSecurity('api-key')
-@Controller('public/v1')
+@Controller('public')
 @UseGuards(ApiKeyAuthGuard, ApiRateLimitGuard)
 export class PublicApiController {
   constructor(

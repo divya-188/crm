@@ -14,7 +14,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Textarea from '@/components/ui/Textarea';
 import Checkbox from '@/components/ui/Checkbox';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface CustomFieldModalProps {
   isOpen: boolean;
@@ -81,11 +81,11 @@ export const CustomFieldModal: React.FC<CustomFieldModalProps> = ({
       contactsService.createCustomFieldDefinition(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customFieldDefinitions'] });
-      toast.success('Custom field created successfully');
+      Toast.success('Custom field created successfully');
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create custom field');
+      Toast.error(error.response?.data?.message || 'Failed to create custom field');
     },
   });
 
@@ -95,11 +95,11 @@ export const CustomFieldModal: React.FC<CustomFieldModalProps> = ({
       contactsService.updateCustomFieldDefinition(field!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customFieldDefinitions'] });
-      toast.success('Custom field updated successfully');
+      Toast.success('Custom field updated successfully');
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update custom field');
+      Toast.error(error.response?.data?.message || 'Failed to update custom field');
     },
   });
 
@@ -108,13 +108,13 @@ export const CustomFieldModal: React.FC<CustomFieldModalProps> = ({
 
     // Validate key format
     if (!isEditing && !/^[a-z0-9_]+$/.test(formData.key)) {
-      toast.error('Key must be lowercase alphanumeric with underscores only');
+      Toast.error('Key must be lowercase alphanumeric with underscores only');
       return;
     }
 
     // Validate dropdown options
     if (formData.type === CustomFieldType.DROPDOWN && dropdownOptions.length === 0) {
-      toast.error('Dropdown type requires at least one option');
+      Toast.error('Dropdown type requires at least one option');
       return;
     }
 

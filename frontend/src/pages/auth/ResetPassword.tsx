@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { authService } from '@/services/auth.service';
 import { getErrorMessage } from '@/lib/api-client';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 export const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
@@ -46,12 +46,12 @@ export const ResetPassword: React.FC = () => {
         password: formData.password,
       });
 
-      toast.success(response.message || 'Password reset successfully');
+      Toast.success(response.message || 'Password reset successfully');
       navigate('/auth/login');
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      toast.error(errorMessage);
+      Toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

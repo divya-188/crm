@@ -4,7 +4,7 @@ import { Bell, ChevronDown, LogOut, Settings, User, Menu } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth.store';
 import { authService } from '@/services/auth.service';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -20,7 +20,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     try {
       await authService.logout();
       clearAuth();
-      toast.success('Logged out successfully');
+      Toast.success('Logged out successfully');
       navigate('/auth/login');
     } catch (error) {
       // Even if API call fails, clear local auth

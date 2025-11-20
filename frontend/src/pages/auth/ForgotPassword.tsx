@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { authService } from '@/services/auth.service';
 import { getErrorMessage } from '@/lib/api-client';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -19,11 +19,11 @@ export const ForgotPassword: React.FC = () => {
     try {
       const response = await authService.forgotPassword({ email });
       setSuccess(true);
-      toast.success(response.message || 'Password reset link sent to your email');
+      Toast.success(response.message || 'Password reset link sent to your email');
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      toast.error(errorMessage);
+      Toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -68,6 +68,9 @@ export class User {
   @Column({ type: 'jsonb', nullable: true })
   settings: Record<string, any>;
 
+  @Column({ type: 'jsonb', nullable: true })
+  preferences: Record<string, any>;
+
   @Column({ nullable: true })
   refreshToken: string;
 

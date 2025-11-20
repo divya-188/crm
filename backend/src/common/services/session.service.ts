@@ -6,22 +6,26 @@ export interface SessionData {
   tenantId: string;
   role: string;
   email: string;
+  lastActivity?: number;
   [key: string]: any;
 }
 
 @Injectable()
 export class SessionService {
   private readonly SESSION_PREFIX = 'session:';
-  private readonly SESSION_TTL = 86400; // 24 hours
 
   constructor(private readonly redisService: RedisService) {}
 
   /**
    * Create a new session
    */
-  async createSession(sessionId: string, data: SessionData): Promise<void> {
+  async createSession(sessionId: string, data: SessionData, ttl?: number): Promise<void> {
     const key = this.getSessionKey(sessionId);
-    await this.redisService.set(key, data, this.SESSION_TTL);
+    const sessionData = {
+      ...data,
+      lastActivity: Date.now(),
+    };
+    await this.redisService.set(key, sessionData, ttl || 86400);
   }
 
   /**
@@ -35,13 +39,17 @@ export class SessionService {
   /**
    * Update session data
    */
-  async updateSession(sessionId: string, data: Partial<SessionData>): Promise<void> {
+  async updateSession(sessionId: string, data: Partial<SessionData>, ttl?: number): Promise<void> {
     const key = this.getSessionKey(sessionId);
     const existingSession = await this.getSession(sessionId);
 
     if (existingSession) {
-      const updatedSession = { ...existingSession, ...data };
-      await this.redisService.set(key, updatedSession, this.SESSION_TTL);
+      const updatedSession = { 
+        ...existingSession, 
+        ...data,
+        lastActivity: Date.now(),
+      };
+      await this.redisService.set(key, updatedSession, ttl || 86400);
     }
   }
 
@@ -56,9 +64,25 @@ export class SessionService {
   /**
    * Refresh session TTL
    */
-  async refreshSession(sessionId: string): Promise<void> {
+  async refreshSession(sessionId: string, ttl?: number): Promise<void> {
     const key = this.getSessionKey(sessionId);
-    await this.redisService.expire(key, this.SESSION_TTL);
+    const session = await this.getSession(sessionId);
+    if (session) {
+      session.lastActivity = Date.now();
+      await this.redisService.set(key, session, ttl || 86400);
+    }
+  }
+
+  /**
+   * Check if session is idle
+   */
+  async isSessionIdle(sessionId: string, idleTimeout: number): Promise<boolean> {
+    const session = await this.getSession(sessionId);
+    if (!session || !session.lastActivity) {
+      return true;
+    }
+    const idleTime = Date.now() - session.lastActivity;
+    return idleTime > idleTimeout * 1000;
   }
 
   /**

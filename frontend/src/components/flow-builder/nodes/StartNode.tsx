@@ -18,29 +18,73 @@ const StartNode: React.FC<NodeProps<StartNodeData>> = ({ data, selected }) => {
         whileHover={{ scale: 1.05 }}
         transition={{ duration: 0.2 }}
         className={cn(
-          'px-6 py-4 rounded-full border-2 bg-gradient-to-br from-success-400 to-success-600 shadow-lg transition-all',
+          'relative px-8 py-5 rounded-2xl border-2 shadow-2xl transition-all overflow-hidden',
+          'bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600',
           selected
-            ? 'border-success-700 shadow-glow ring-4 ring-success-200'
-            : 'border-success-500'
+            ? 'border-emerald-300 ring-4 ring-emerald-200/50'
+            : 'border-emerald-400/50'
         )}
+        style={{
+          boxShadow: selected
+            ? '0 20px 40px -12px rgba(16, 185, 129, 0.5), 0 0 0 4px rgba(16, 185, 129, 0.1)'
+            : '0 10px 30px -8px rgba(16, 185, 129, 0.4)',
+        }}
       >
-        <div className="flex items-center gap-2">
+        {/* Animated background glow */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"
+          animate={{
+            opacity: [0.3, 0.6, 0.3],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        
+        {/* Content */}
+        <div className="relative flex items-center gap-3">
           <motion.div
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm"
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
           >
-            <Play className="w-5 h-5 text-white fill-white" />
+            <Play className="w-4 h-4 text-white fill-white" />
           </motion.div>
-          <span className="font-bold text-sm text-white">
+          <span className="font-bold text-base text-white drop-shadow-md">
             {data.label}
           </span>
         </div>
+
+        {/* Shine effect */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+          initial={{ x: '-100%' }}
+          animate={{ x: '200%' }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            repeatDelay: 2,
+            ease: 'easeInOut',
+          }}
+          style={{
+            transform: 'skewX(-20deg)',
+          }}
+        />
       </motion.div>
       
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-success-600 !border-2 !border-white"
+        className="!w-3 !h-3 !bg-emerald-500 !border-2 !border-white !shadow-lg"
       />
     </>
   );

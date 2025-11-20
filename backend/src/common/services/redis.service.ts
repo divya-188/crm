@@ -10,15 +10,22 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly defaultTTL: number;
 
   constructor(private configService: ConfigService) {
-    const redisConfig = this.configService.get('redis');
-    this.keyPrefix = redisConfig.keyPrefix;
-    this.defaultTTL = redisConfig.ttl;
+    const redisConfig = this.configService.get('redis') || {};
+    
+    // Set defaults if config is missing
+    this.keyPrefix = redisConfig.keyPrefix || 'crm:';
+    this.defaultTTL = redisConfig.ttl || 3600;
+
+    const host = redisConfig.host || this.configService.get('REDIS_HOST') || 'localhost';
+    const port = redisConfig.port || this.configService.get('REDIS_PORT') || 6379;
+    const password = redisConfig.password || this.configService.get('REDIS_PASSWORD');
+    const db = redisConfig.db || this.configService.get('REDIS_DB') || 0;
 
     this.client = new Redis({
-      host: redisConfig.host,
-      port: redisConfig.port,
-      password: redisConfig.password,
-      db: redisConfig.db,
+      host,
+      port,
+      password,
+      db,
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);
         return delay;
@@ -209,6 +216,27 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
    */
   async flushdb(): Promise<void> {
     await this.client.flushdb();
+  }
+
+  /**
+   * Get keys matching a pattern
+   */
+  async keys(pattern: string): Promise<string[]> {
+    return await this.client.keys(pattern);
+  }
+
+  /**
+   * Ping Redis server
+   */
+  async ping(): Promise<string> {
+    return await this.client.ping();
+  }
+
+  /**
+   * Get Redis server info
+   */
+  async info(section?: string): Promise<string> {
+    return await this.client.info(section);
   }
 
   /**

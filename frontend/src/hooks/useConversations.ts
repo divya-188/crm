@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { conversationsService } from '@/services';
 import { ConversationFilters, SendMessageDto } from '@/types/models.types';
 import { QueryOptions } from '@/types/api.types';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 /**
  * Query keys for conversations
@@ -83,7 +83,7 @@ export const useAssignConversation = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: conversationsKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: conversationsKeys.lists() });
-      toast.success('Conversation assigned successfully');
+      Toast.success('Conversation assigned successfully');
     },
   });
 };
@@ -100,7 +100,7 @@ export const useUpdateConversation = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: conversationsKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: conversationsKeys.lists() });
-      toast.success('Conversation updated successfully');
+      Toast.success('Conversation updated successfully');
     },
   });
 };
@@ -117,7 +117,7 @@ export const useAddConversationTags = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: conversationsKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: conversationsKeys.lists() });
-      toast.success('Tags added successfully');
+      Toast.success('Tags added successfully');
     },
   });
 };

@@ -9,11 +9,17 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
+import { SuperAdminModule } from '../super-admin/super-admin.module';
+import { CommonModule } from '../../common/common.module';
+import { TwoFactorGuard } from './guards/2fa.guard';
+import { SessionIdleGuard } from './guards/session-idle.guard';
 
 @Module({
   imports: [
     UsersModule,
     TenantsModule,
+    SuperAdminModule,
+    CommonModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -27,7 +33,14 @@ import { LocalStrategy } from './strategies/local.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, JwtRefreshStrategy],
-  exports: [AuthService],
+  providers: [
+    AuthService, 
+    LocalStrategy, 
+    JwtStrategy, 
+    JwtRefreshStrategy,
+    TwoFactorGuard,
+    SessionIdleGuard,
+  ],
+  exports: [AuthService, TwoFactorGuard, SessionIdleGuard],
 })
 export class AuthModule {}

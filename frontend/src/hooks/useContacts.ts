@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contactsService } from '@/services';
 import { CreateContactDto, UpdateContactDto } from '@/types/models.types';
 import { QueryOptions } from '@/types/api.types';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 /**
  * Query keys for contacts
@@ -46,7 +46,7 @@ export const useCreateContact = () => {
     mutationFn: (data: CreateContactDto) => contactsService.createContact(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: contactsKeys.lists() });
-      toast.success('Contact created successfully');
+      Toast.success('Contact created successfully');
     },
   });
 };
@@ -63,7 +63,7 @@ export const useUpdateContact = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: contactsKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: contactsKeys.lists() });
-      toast.success('Contact updated successfully');
+      Toast.success('Contact updated successfully');
     },
   });
 };
@@ -78,7 +78,7 @@ export const useDeleteContact = () => {
     mutationFn: (id: string) => contactsService.deleteContact(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: contactsKeys.lists() });
-      toast.success('Contact deleted successfully');
+      Toast.success('Contact deleted successfully');
     },
   });
 };
@@ -95,7 +95,7 @@ export const useAddContactTags = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: contactsKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: contactsKeys.lists() });
-      toast.success('Tags added successfully');
+      Toast.success('Tags added successfully');
     },
   });
 };
@@ -110,7 +110,7 @@ export const useImportContacts = () => {
     mutationFn: (file: File) => contactsService.importContacts(file),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: contactsKeys.lists() });
-      toast.success(`Imported ${result.imported} contacts. ${result.failed} failed.`);
+      Toast.success(`Imported ${result.imported} contacts. ${result.failed} failed.`);
     },
   });
 };

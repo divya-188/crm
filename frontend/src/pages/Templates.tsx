@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
-  Search, 
   FileText, 
   CheckCircle, 
   XCircle, 
@@ -16,33 +16,51 @@ import {
   Trash2,
   Eye,
   Send,
+  Copy,
+  BarChart3,
+  Upload,
+  Download,
+  RefreshCw,
+  Globe,
+  Tag,
 } from 'lucide-react';
 import { templatesService } from '@/services/templates.service';
 import { Template } from '@/types/models.types';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
+import { BorderBeam } from '@/components/ui/BorderBeam';
 import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
-import toast from 'react-hot-toast';
-import TemplateInlineForm from '@/components/templates/TemplateInlineForm';
-import { TemplatePreviewModal, TemplateDeleteModal } from '@/components/templates';
+import Toast from '@/lib/toast-system';
+import TemplateCreationWizard from '@/components/templates/TemplateCreationWizard';
+import { TemplatePreviewModal, TemplateDeleteModal, TemplateDuplicateModal } from '@/components/templates';
+import { TemplateImportModal, TemplateExportModal } from '@/components/templates/import-export';
+import TemplateFilters, { TemplateFilterValues, SortOptions } from '@/components/templates/TemplateFilters';
 
 export default function Templates() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<TemplateFilterValues>({
     status: 'all',
     category: 'all',
     language: 'all',
     search: '',
+    startDate: undefined,
+    endDate: undefined,
+  });
+  const [sortOptions, setSortOptions] = useState<SortOptions>({
+    sortBy: 'createdAt',
+    sortOrder: 'DESC',
   });
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Refs for scroll functionality
@@ -59,14 +77,19 @@ export default function Templates() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['templates', filters],
+    queryKey: ['templates', filters, sortOptions],
     queryFn: ({ pageParam = 1 }) =>
       templatesService.getTemplates({
         page: pageParam,
         limit: 20,
         status: filters.status !== 'all' ? filters.status : undefined,
         category: filters.category !== 'all' ? filters.category : undefined,
+        language: filters.language !== 'all' ? filters.language : undefined,
         search: filters.search || undefined,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        sortBy: sortOptions.sortBy,
+        sortOrder: sortOptions.sortOrder,
       }),
     getNextPageParam: (lastPage) => {
       if (!lastPage.page || !lastPage.total || !lastPage.limit) return undefined;
@@ -104,29 +127,54 @@ export default function Templates() {
     mutationFn: (id: string) => templatesService.submitTemplate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
-      toast.success('Template submitted for approval');
+      Toast.success('Template submitted for approval');
       setOpenDropdown(null);
     },
     onError: () => {
-      toast.error('Failed to submit template');
+      Toast.error('Failed to submit template');
+    },
+  });
+
+  // Sync all templates from Meta
+  const syncMutation = useMutation({
+    mutationFn: () => templatesService.syncTemplatesFromMeta(),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
+      Toast.success(`Synced ${data.synced} template(s) from Meta`);
+      if (data.errors.length > 0) {
+        Toast.warning(`${data.errors.length} error(s) occurred during sync`);
+      }
+    },
+    onError: () => {
+      Toast.error('Failed to sync templates from Meta');
+    },
+  });
+
+  // Refresh individual template status
+  const refreshStatusMutation = useMutation({
+    mutationFn: (id: string) => templatesService.getMetaStatus(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
+      Toast.success('Template status refreshed from Meta');
+      setOpenDropdown(null);
+    },
+    onError: () => {
+      Toast.error('Failed to refresh template status');
     },
   });
 
   const handleCreateTemplate = () => {
-    const newState = !showCreateForm;
-    setShowCreateForm(newState);
+    setShowCreateForm(true);
     setShowEditForm(false);
     setSelectedTemplate(null);
     
     // Scroll to create form with smooth animation
-    if (newState) {
-      setTimeout(() => {
-        createFormRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      }, 100);
-    }
+    setTimeout(() => {
+      createFormRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 100);
   };
 
   const handleEditTemplate = (template: Template) => {
@@ -162,19 +210,45 @@ export default function Templates() {
     }
   };
 
-  const handleSearch = (value: string) => {
-    setFilters((prev) => ({ ...prev, search: value }));
+  const handleDuplicateTemplate = (template: Template) => {
+    setSelectedTemplate(template);
+    setIsDuplicateModalOpen(true);
+    setOpenDropdown(null);
   };
 
-  const handleStatusFilter = (value: string) => {
-    setFilters((prev) => ({ ...prev, status: value }));
+  const handleViewAnalytics = (template: Template) => {
+    navigate(`/templates/${template.id}/analytics`);
+    setOpenDropdown(null);
   };
 
-  const handleCategoryFilter = (value: string) => {
-    setFilters((prev) => ({ ...prev, category: value }));
+  const handleRefreshStatus = async (template: Template) => {
+    try {
+      Toast.info('Refreshing template status...');
+      await queryClient.invalidateQueries({ queryKey: ['templates'] });
+      Toast.success('Template status refreshed');
+    } catch (error) {
+      Toast.error('Failed to refresh status');
+    }
   };
 
+  const handleFiltersChange = (newFilters: TemplateFilterValues) => {
+    setFilters(newFilters);
+  };
 
+  const handleResetFilters = () => {
+    setFilters({
+      status: 'all',
+      category: 'all',
+      language: 'all',
+      search: '',
+      startDate: undefined,
+      endDate: undefined,
+    });
+  };
+
+  const handleSortChange = (newSortOptions: SortOptions) => {
+    setSortOptions(newSortOptions);
+  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -241,13 +315,40 @@ export default function Templates() {
             Manage your WhatsApp message templates
           </p>
         </div>
-        <Button 
-          onClick={handleCreateTemplate}
-          className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          {showCreateForm ? 'Cancel' : 'Create Template'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => setIsImportModalOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </Button>
+          <Button 
+            onClick={() => setIsExportModalOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
+          <Button 
+            onClick={() => syncMutation.mutate()}
+            disabled={syncMutation.isPending}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+            {syncMutation.isPending ? 'Syncing...' : 'Sync from Meta'}
+          </Button>
+          <Button 
+            onClick={handleCreateTemplate}
+            className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-lg hover:shadow-xl transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Create Template
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -341,87 +442,75 @@ export default function Templates() {
         </motion.div>
       </div>
 
-      {/* Filters and View Toggle */}
-      <Card className="p-4">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
-            <div className="flex-1 max-w-md">
-              <Input
-                placeholder="Search templates..."
-                value={filters.search}
-                onChange={(e) => handleSearch(e.target.value)}
-                icon={<Search className="w-4 h-4" />}
-              />
-            </div>
-            <div className="w-full sm:w-48">
-              <Select
-                value={filters.status}
-                onChange={(e) => handleStatusFilter(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All Status' },
-                  { value: 'draft', label: 'Draft' },
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'approved', label: 'Approved' },
-                  { value: 'rejected', label: 'Rejected' },
-                ]}
-              />
-            </div>
-            <div className="w-full sm:w-48">
-              <Select
-                value={filters.category}
-                onChange={(e) => handleCategoryFilter(e.target.value)}
-                options={[
-                  { value: 'all', label: 'All Categories' },
-                  { value: 'marketing', label: 'Marketing' },
-                  { value: 'utility', label: 'Utility' },
-                  { value: 'authentication', label: 'Authentication' },
-                ]}
-              />
-            </div>
-          </div>
+      {/* Filters and Sorting */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1">
+          <TemplateFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onReset={handleResetFilters}
+            sortOptions={sortOptions}
+            onSortChange={handleSortChange}
+          />
+        </div>
+        
+        {/* View Mode */}
+        <div className="flex flex-col sm:flex-row gap-4 lg:w-auto">
           
           {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-white dark:bg-neutral-700 shadow-sm'
-                  : 'hover:bg-neutral-200 dark:hover:bg-neutral-700'
-              }`}
-            >
-              <Grid3x3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-white dark:bg-neutral-700 shadow-sm'
-                  : 'hover:bg-neutral-200 dark:hover:bg-neutral-700'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
+          <Card className="p-4 flex items-center justify-center">
+            <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-white dark:bg-neutral-700 shadow-sm'
+                    : 'hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                }`}
+                title="Grid view"
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white dark:bg-neutral-700 shadow-sm'
+                    : 'hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                }`}
+                title="List view"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+          </Card>
         </div>
-      </Card>
+      </div>
 
-      {/* Inline Create/Edit Form */}
+      {/* Template Creation Wizard */}
       <AnimatePresence>
         {showCreateForm && (
-          <div ref={createFormRef}>
-            <TemplateInlineForm
+          <motion.div
+            ref={createFormRef}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <TemplateCreationWizard
               mode="create"
               onCancel={() => setShowCreateForm(false)}
-              onSuccess={() => {
-                setShowCreateForm(false);
-              }}
+              onSuccess={() => setShowCreateForm(false)}
             />
-          </div>
+          </motion.div>
         )}
         {showEditForm && selectedTemplate && (
-          <div ref={editFormRef}>
-            <TemplateInlineForm
+          <motion.div
+            ref={editFormRef}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <TemplateCreationWizard
               mode="edit"
               template={selectedTemplate}
               onCancel={() => {
@@ -433,7 +522,7 @@ export default function Templates() {
                 setSelectedTemplate(null);
               }}
             />
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -461,7 +550,7 @@ export default function Templates() {
               : 'Get started by creating your first template'}
           </p>
           {!filters.search && filters.status === 'all' && filters.category === 'all' && (
-            <Button onClick={() => setShowCreateForm(true)}>
+            <Button onClick={handleCreateTemplate}>
               <Plus className="w-4 h-4 mr-2" />
               Create First Template
             </Button>
@@ -481,15 +570,25 @@ export default function Templates() {
                   <motion.div
                     key={template.id}
                     layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ y: -4 }}
-                    className="group"
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    transition={{ 
+                      delay: index * 0.05,
+                      duration: 0.4,
+                      ease: [0.4, 0, 0.2, 1]
+                    }}
+                    whileHover={{ 
+                      y: -8,
+                      transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+                    }}
+                    className="group h-full"
                   >
-                    <Card className="p-6 h-full hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary-200 dark:hover:border-primary-800">
-                      <div className="flex flex-col h-full">
+                    <Card className="p-6 h-full shadow-md hover:shadow-2xl transition-all duration-500 ease-out border-2 border-neutral-200 dark:border-neutral-700 hover:border-primary-400 dark:hover:border-primary-600 relative overflow-hidden bg-white dark:bg-neutral-900 rounded-xl">
+                      {/* Gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary-50/0 via-primary-50/0 to-primary-100/0 dark:from-primary-900/0 dark:via-primary-900/0 dark:to-primary-800/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                      
+                      <div className="flex flex-col h-full relative z-10">
                         {/* Header */}
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
@@ -527,6 +626,25 @@ export default function Templates() {
                                     <Eye className="w-4 h-4" />
                                     Preview
                                   </button>
+                                  {(template.status === 'pending' || template.status === 'approved') && template.metaTemplateId && (
+                                    <button
+                                      onClick={() => refreshStatusMutation.mutate(template.id)}
+                                      disabled={refreshStatusMutation.isPending && refreshStatusMutation.variables === template.id}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 text-primary-600 transition-colors disabled:opacity-50"
+                                    >
+                                      <RefreshCw className={`w-4 h-4 ${refreshStatusMutation.isPending && refreshStatusMutation.variables === template.id ? 'animate-spin' : ''}`} />
+                                      Refresh Status
+                                    </button>
+                                  )}
+                                  {template.status === 'approved' && (
+                                    <button
+                                      onClick={() => handleViewAnalytics(template)}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 transition-colors"
+                                    >
+                                      <BarChart3 className="w-4 h-4" />
+                                      View Analytics
+                                    </button>
+                                  )}
                                   {template.status === 'draft' && (
                                     <>
                                       <button
@@ -538,13 +656,30 @@ export default function Templates() {
                                       </button>
                                       <button
                                         onClick={() => handleSubmitTemplate(template)}
-                                        className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 text-primary-600 transition-colors"
+                                        disabled={submitMutation.isPending && submitMutation.variables === template.id}
+                                        className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 text-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
-                                        <Send className="w-4 h-4" />
-                                        Submit for Approval
+                                        {submitMutation.isPending && submitMutation.variables === template.id ? (
+                                          <>
+                                            <Spinner size="sm" className="w-4 h-4" />
+                                            Submitting...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Send className="w-4 h-4" />
+                                            Submit for Approval
+                                          </>
+                                        )}
                                       </button>
                                     </>
                                   )}
+                                  <button
+                                    onClick={() => handleDuplicateTemplate(template)}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 transition-colors"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                    Duplicate
+                                  </button>
                                   {(template.status === 'draft' || template.status === 'rejected') && (
                                     <>
                                       <hr className="my-1 border-neutral-200 dark:border-neutral-700" />
@@ -565,33 +700,51 @@ export default function Templates() {
 
                         {/* Content */}
                         <div className="flex-1">
-                          <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-1 truncate">
-                            {template.name}
+                          <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-2 line-clamp-2" title={template.name}>
+                            {template.name
+                              .replace(/_/g, ' ')
+                              .split(' ')
+                              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                              .join(' ')
+                              .substring(0, 50)}
+                            {template.name.length > 50 && '...'}
                           </h3>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-                            {template.language}
-                          </p>
 
-                          <div className="flex items-center gap-2 mb-4">
-                            <Badge variant={statusInfo.color as any} className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                              <Globe className="w-3 h-3" />
+                              {template.language.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                              statusInfo.color === 'success' ? 'bg-success-100 dark:bg-success-900/20 text-success-700 dark:text-success-400' :
+                              statusInfo.color === 'warning' ? 'bg-warning-100 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400' :
+                              statusInfo.color === 'danger' ? 'bg-danger-100 dark:bg-danger-900/20 text-danger-700 dark:text-danger-400' :
+                              'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'
+                            }`}>
                               <StatusIcon className="w-3 h-3" />
                               {statusInfo.label}
-                            </Badge>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${categoryInfo.color}`}>
+                            </span>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${categoryInfo.color}`}>
+                              <Tag className="w-3 h-3" />
                               {categoryInfo.label}
                             </span>
                           </div>
 
+                          {/* Creation Date */}
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+                            Created on {formatDate(template.createdAt)}
+                          </div>
+
                           {/* Content Preview */}
-                          <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 mb-4">
-                            <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-3">
+                          <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
                               {template.content}
                             </p>
                           </div>
 
                           {/* Variables */}
                           {template.variables && template.variables.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-4">
+                            <div className="flex flex-wrap gap-2 mb-3">
                               {template.variables.slice(0, 3).map((variable, idx) => (
                                 <span
                                   key={idx}
@@ -610,7 +763,7 @@ export default function Templates() {
 
                           {/* Rejection Reason */}
                           {template.status === 'rejected' && template.rejectionReason && (
-                            <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-3 mb-4">
+                            <div className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg p-3 mb-3">
                               <p className="text-sm text-danger-700 dark:text-danger-400">
                                 <strong>Rejection:</strong> {template.rejectionReason}
                               </p>
@@ -618,13 +771,69 @@ export default function Templates() {
                           )}
                         </div>
 
-                        {/* Footer */}
-                        <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                          <div className="flex items-center justify-between text-xs text-neutral-500">
-                            <span>Created {formatDate(template.createdAt)}</span>
+                        {/* Footer with Action Buttons */}
+                        <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                          {/* Action Buttons */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => handlePreviewTemplate(template)}
+                                className="group/preview relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-300 overflow-hidden"
+                              >
+                                <Eye className="w-4 h-4 flex-shrink-0" />
+                                <span className="max-w-0 opacity-0 group-hover/preview:max-w-xs group-hover/preview:opacity-100 group-hover/preview:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
+                                  Preview
+                                </span>
+                              </button>
+
+                              <button
+                                onClick={() => handleRefreshStatus(template)}
+                                className="group/refresh relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 overflow-hidden"
+                              >
+                                <RefreshCw className="w-4 h-4 flex-shrink-0" />
+                                <span className="max-w-0 opacity-0 group-hover/refresh:max-w-xs group-hover/refresh:opacity-100 group-hover/refresh:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
+                                  Refresh
+                                </span>
+                              </button>
+
+                              <button
+                                onClick={() => navigate(`/templates/${template.id}/analytics`)}
+                                className="group/analytics relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 transition-all duration-300 overflow-hidden"
+                              >
+                                <BarChart3 className="w-4 h-4 flex-shrink-0" />
+                                <span className="max-w-0 opacity-0 group-hover/analytics:max-w-xs group-hover/analytics:opacity-100 group-hover/analytics:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
+                                  Analytics
+                                </span>
+                              </button>
+
+                              <button
+                                onClick={() => handleDuplicateTemplate(template)}
+                                className="group/duplicate relative flex items-center h-10 px-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 transition-all duration-300 overflow-hidden"
+                              >
+                                <Copy className="w-4 h-4 flex-shrink-0" />
+                                <span className="max-w-0 opacity-0 group-hover/duplicate:max-w-xs group-hover/duplicate:opacity-100 group-hover/duplicate:ml-2 text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300">
+                                  Duplicate
+                                </span>
+                              </button>
+                            </div>
+                            <span className="text-xs text-neutral-400 dark:text-neutral-500">
+                              {formatDate(template.createdAt)}
+                            </span>
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Animated Border Beam - Only on hover */}
+                      <BorderBeam
+                        size={250}
+                        duration={12}
+                        delay={0}
+                        borderWidth={1.5}
+                        colorFrom="transparent"
+                        colorVia="rgb(124, 58, 237)"
+                        colorTo="transparent"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      />
                     </Card>
                   </motion.div>
                 ) : (
@@ -695,6 +904,25 @@ export default function Templates() {
                                   <Eye className="w-4 h-4" />
                                   Preview
                                 </button>
+                                {(template.status === 'pending' || template.status === 'approved') && template.metaTemplateId && (
+                                  <button
+                                    onClick={() => refreshStatusMutation.mutate(template.id)}
+                                    disabled={refreshStatusMutation.isPending && refreshStatusMutation.variables === template.id}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 text-primary-600 transition-colors disabled:opacity-50"
+                                  >
+                                    <RefreshCw className={`w-4 h-4 ${refreshStatusMutation.isPending && refreshStatusMutation.variables === template.id ? 'animate-spin' : ''}`} />
+                                    Refresh Status
+                                  </button>
+                                )}
+                                {template.status === 'approved' && (
+                                  <button
+                                    onClick={() => handleViewAnalytics(template)}
+                                    className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 transition-colors"
+                                  >
+                                    <BarChart3 className="w-4 h-4" />
+                                    View Analytics
+                                  </button>
+                                )}
                                 {template.status === 'draft' && (
                                   <>
                                     <button
@@ -706,13 +934,30 @@ export default function Templates() {
                                     </button>
                                     <button
                                       onClick={() => handleSubmitTemplate(template)}
-                                      className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 text-primary-600 transition-colors"
+                                      disabled={submitMutation.isPending && submitMutation.variables === template.id}
+                                      className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 text-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                      <Send className="w-4 h-4" />
-                                      Submit for Approval
+                                      {submitMutation.isPending && submitMutation.variables === template.id ? (
+                                        <>
+                                          <Spinner size="sm" className="w-4 h-4" />
+                                          Submitting...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Send className="w-4 h-4" />
+                                          Submit for Approval
+                                        </>
+                                      )}
                                     </button>
                                   </>
                                 )}
+                                <button
+                                  onClick={() => handleDuplicateTemplate(template)}
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 flex items-center gap-2 transition-colors"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                  Duplicate
+                                </button>
                                 {(template.status === 'draft' || template.status === 'rejected') && (
                                   <>
                                     <hr className="my-1 border-neutral-200 dark:border-neutral-700" />
@@ -775,6 +1020,22 @@ export default function Templates() {
           setSelectedTemplate(null);
         }}
         template={selectedTemplate}
+      />
+      <TemplateDuplicateModal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => {
+          setIsDuplicateModalOpen(false);
+          setSelectedTemplate(null);
+        }}
+        template={selectedTemplate}
+      />
+      <TemplateImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+      />
+      <TemplateExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
       />
     </div>
   );

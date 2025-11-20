@@ -7,7 +7,7 @@ import { Contact } from '../../types/models.types';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface ContactInlineFormProps {
   onSuccess: () => void;
@@ -45,19 +45,20 @@ const ContactInlineForm: React.FC<ContactInlineFormProps> = ({
   // Populate form data when editing
   useEffect(() => {
     if (contact && isEditMode) {
+      const customFields = contact.customFields || {};
       setFormData({
         firstName: contact.firstName || '',
         lastName: contact.lastName || '',
         email: contact.email || '',
         phone: contact.phone || '',
-        phoneNumber: contact.phoneNumber || '',
-        company: (contact as any).company || '',
-        position: (contact as any).position || '',
-        address: (contact as any).address || '',
-        city: (contact as any).city || '',
-        country: (contact as any).country || '',
+        phoneNumber: contact.phone || '',
+        company: customFields.company || '',
+        position: customFields.position || '',
+        address: customFields.address || '',
+        city: customFields.city || '',
+        country: customFields.country || '',
         tags: contact.tags || [],
-        notes: (contact as any).notes || '',
+        notes: contact.notes || '',
       });
     }
   }, [contact, isEditMode]);
@@ -65,24 +66,24 @@ const ContactInlineForm: React.FC<ContactInlineFormProps> = ({
   const createMutation = useMutation({
     mutationFn: (data: any) => contactsService.createContact(data),
     onSuccess: () => {
-      toast.success('Contact created successfully');
+      Toast.success('Contact created successfully');
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create contact');
+      Toast.error(error.response?.data?.message || 'Failed to create contact');
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: any) => contactsService.updateContact(contact!.id, data),
     onSuccess: () => {
-      toast.success('Contact updated successfully');
+      Toast.success('Contact updated successfully');
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update contact');
+      Toast.error(error.response?.data?.message || 'Failed to update contact');
     },
   });
 
@@ -90,14 +91,31 @@ const ContactInlineForm: React.FC<ContactInlineFormProps> = ({
     e.preventDefault();
     
     if (!formData.firstName.trim() && !formData.lastName.trim() && !formData.email.trim()) {
-      toast.error('Please provide at least a name or email');
+      Toast.error('Please provide at least a name or email');
       return;
     }
 
+    // Prepare data according to backend DTO
     const submitData = {
-      ...formData,
-      phoneNumber: formData.phone || formData.phoneNumber,
+      firstName: formData.firstName || undefined,
+      lastName: formData.lastName || undefined,
+      email: formData.email || undefined,
+      phone: formData.phone || formData.phoneNumber || undefined,
+      tags: formData.tags.length > 0 ? formData.tags : undefined,
+      notes: formData.notes || undefined,
+      customFields: {
+        ...(formData.company && { company: formData.company }),
+        ...(formData.position && { position: formData.position }),
+        ...(formData.address && { address: formData.address }),
+        ...(formData.city && { city: formData.city }),
+        ...(formData.country && { country: formData.country }),
+      },
     };
+
+    // Remove customFields if empty
+    if (Object.keys(submitData.customFields).length === 0) {
+      delete (submitData as any).customFields;
+    }
 
     if (isEditMode) {
       updateMutation.mutate(submitData);

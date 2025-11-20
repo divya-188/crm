@@ -25,7 +25,7 @@ import UserInlineForm from '@/components/users/UserInlineForm';
 import { UserDeleteModal } from '@/components/users/UserDeleteModal';
 import { UserDetailModal } from '@/components/users/UserDetailModal';
 import Spinner from '@/components/ui/Spinner';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 export default function Users() {
   const queryClient = useQueryClient();

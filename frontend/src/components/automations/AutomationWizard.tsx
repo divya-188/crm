@@ -22,7 +22,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Modal from '@/components/ui/Modal';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import TriggerSelector from './TriggerSelector';
 import ConditionBuilder from './ConditionBuilder';
 import ActionConfigurator from './ActionConfigurator';
@@ -76,7 +76,7 @@ const AutomationWizard: React.FC<AutomationWizardProps> = ({
         : automationsService.createAutomation(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['automations'] });
-      toast.success(
+      Toast.success(
         automation
           ? 'Automation updated successfully'
           : 'Automation created successfully'
@@ -84,7 +84,7 @@ const AutomationWizard: React.FC<AutomationWizardProps> = ({
       onClose();
     },
     onError: () => {
-      toast.error('Failed to save automation');
+      Toast.error('Failed to save automation');
     },
   });
 

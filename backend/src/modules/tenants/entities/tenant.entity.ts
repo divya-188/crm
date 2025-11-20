@@ -60,6 +60,36 @@ export class Tenant {
   @Column({ type: 'jsonb', nullable: true })
   quotaWarnings: Record<string, Record<string, Date>>;
 
+  @Column({ type: 'boolean', default: false })
+  whiteLabelEnabled: boolean;
+
+  @Column({ type: 'jsonb', nullable: true })
+  branding: {
+    logoUrl?: string;
+    faviconUrl?: string;
+    colors?: {
+      primary?: string;
+      secondary?: string;
+      accent?: string;
+      background?: string;
+      text?: string;
+    };
+    typography?: {
+      fontFamily?: string;
+      headingFont?: string;
+      fontSize?: Record<string, string>;
+    };
+    customCss?: string;
+    companyName?: string;
+    tagline?: string;
+  };
+
+  @Column({ type: 'jsonb', nullable: true })
+  teamSettings: Record<string, any>;
+
+  @Column({ type: 'jsonb', nullable: true })
+  integrationSettings: Record<string, any>;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -13,7 +13,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Select from '../ui/Select';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import TriggerSelector from './TriggerSelector';
 import ConditionBuilder from './ConditionBuilder';
 import ActionConfigurator from './ActionConfigurator';
@@ -66,7 +66,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
         ? automationsService.updateAutomation(automation.id, data)
         : automationsService.createAutomation(data),
     onSuccess: () => {
-      toast.success(
+      Toast.success(
         automation
           ? 'Automation updated successfully'
           : 'Automation created successfully'
@@ -75,7 +75,7 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to save automation');
+      Toast.error(error.response?.data?.message || 'Failed to save automation');
     },
   });
 
@@ -83,17 +83,17 @@ const AutomationInlineForm: React.FC<AutomationInlineFormProps> = ({
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error('Automation name is required');
+      Toast.error('Automation name is required');
       return;
     }
 
     if (!formData.triggerType) {
-      toast.error('Trigger type is required');
+      Toast.error('Trigger type is required');
       return;
     }
 
     if (formData.actions.length === 0) {
-      toast.error('At least one action is required');
+      Toast.error('At least one action is required');
       return;
     }
 

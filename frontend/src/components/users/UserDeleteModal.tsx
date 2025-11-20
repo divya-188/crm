@@ -5,7 +5,7 @@ import Spinner from '@/components/ui/Spinner';
 import { AlertTriangle } from 'lucide-react';
 import { usersService } from '@/services/users.service';
 import { User } from '@/types/models.types';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface UserDeleteModalProps {
   isOpen: boolean;
@@ -20,11 +20,11 @@ export const UserDeleteModal = ({ isOpen, onClose, user }: UserDeleteModalProps)
     mutationFn: (id: string) => usersService.deleteUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User deleted successfully');
+      Toast.success('User deleted successfully');
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete user');
+      Toast.error(error.response?.data?.message || 'Failed to delete user');
     },
   });
 

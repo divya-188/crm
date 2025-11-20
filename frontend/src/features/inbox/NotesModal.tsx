@@ -3,7 +3,7 @@ import { X, FileText, Send } from 'lucide-react';
 import { Conversation } from '@/types/models.types';
 import { Modal, Button } from '@/components/ui';
 import { conversationsService } from '@/services';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface NotesModalProps {
@@ -20,13 +20,13 @@ export const NotesModal: React.FC<NotesModalProps> = ({ conversation, isOpen, on
     mutationFn: (noteText: string) =>
       conversationsService.addNote(conversation.id, noteText),
     onSuccess: () => {
-      toast.success('Note added successfully');
+      Toast.success('Note added successfully');
       setNote('');
       onClose();
       queryClient.invalidateQueries({ queryKey: ['conversations', conversation.id] });
     },
     onError: () => {
-      toast.error('Failed to add note');
+      Toast.error('Failed to add note');
     },
   });
 

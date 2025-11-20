@@ -8,7 +8,7 @@ import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
 import { ContactSegment, Contact } from '@/types/models.types';
 import { contactsService } from '@/services';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import { fadeInUp, staggerContainer } from '@/lib/motion-variants';
 
 interface SegmentViewModalProps {
@@ -43,7 +43,7 @@ export const SegmentViewModal = ({
       setContacts(result.data);
       setTotal(result.total);
     } catch (error) {
-      toast.error('Failed to load segment contacts');
+      Toast.error('Failed to load segment contacts');
       console.error('Load error:', error);
     } finally {
       setIsLoading(false);

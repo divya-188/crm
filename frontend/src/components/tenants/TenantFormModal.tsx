@@ -20,7 +20,7 @@ import { tenantsService, Tenant, CreateTenantData } from '../../services/tenants
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface TenantFormModalProps {
   isOpen: boolean;
@@ -89,29 +89,29 @@ const TenantFormModal: React.FC<TenantFormModalProps> = ({
   const createMutation = useMutation({
     mutationFn: (data: CreateTenantData) => tenantsService.create(data),
     onSuccess: () => {
-      toast.success('Tenant created successfully');
+      Toast.success('Tenant created successfully');
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create tenant');
+      Toast.error(error.response?.data?.message || 'Failed to create tenant');
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: CreateTenantData) => tenantsService.update(tenant!.id, data),
     onSuccess: () => {
-      toast.success('Tenant updated successfully');
+      Toast.success('Tenant updated successfully');
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update tenant');
+      Toast.error(error.response?.data?.message || 'Failed to update tenant');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      toast.error('Tenant name is required');
+      Toast.error('Tenant name is required');
       return;
     }
     if (isEdit) {

@@ -26,7 +26,7 @@ import Select from '../../components/ui/Select';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import Spinner from '../../components/ui/Spinner';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import TenantInlineForm from '../../components/tenants/TenantInlineForm';
 import TenantDetailModal from '../../components/tenants/TenantDetailModal';
 import TenantDeleteModal from '../../components/tenants/TenantDeleteModal';
@@ -143,10 +143,10 @@ const Tenants: React.FC = () => {
       tenantsService.updateStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
-      toast.success('Tenant status updated successfully');
+      Toast.success('Tenant status updated successfully');
     },
     onError: () => {
-      toast.error('Failed to update tenant status');
+      Toast.error('Failed to update tenant status');
     },
   });
 

@@ -36,7 +36,7 @@ import Card from '../../components/ui/Card';
 import Spinner from '../../components/ui/Spinner';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import {
   PlanDeleteModal,
   PlanInlineForm,
@@ -150,12 +150,12 @@ const SubscriptionPlans: React.FC = () => {
     mutationFn: (id: string) => subscriptionPlansService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
-      toast.success('Plan deleted successfully');
+      Toast.success('Plan deleted successfully');
       setIsDeleteModalOpen(false);
       setSelectedPlan(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete plan');
+      Toast.error(error.response?.data?.message || 'Failed to delete plan');
     },
   });
 
@@ -165,10 +165,10 @@ const SubscriptionPlans: React.FC = () => {
       subscriptionPlansService.update(id, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
-      toast.success('Plan status updated successfully');
+      Toast.success('Plan status updated successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update plan status');
+      Toast.error(error.response?.data?.message || 'Failed to update plan status');
     },
   });
 

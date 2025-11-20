@@ -5,7 +5,7 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import settingsService, { BusinessProfile } from '../../services/settings.service';
 import { Building2, Clock } from 'lucide-react';
 
@@ -46,10 +46,10 @@ export default function BusinessProfileSettings() {
     mutationFn: settingsService.updateBusinessProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['businessProfile'] });
-      toast.success('Business profile updated successfully');
+      Toast.success('Business profile updated successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update business profile');
+      Toast.error(error.response?.data?.message || 'Failed to update business profile');
     },
   });
 

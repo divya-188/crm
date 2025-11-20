@@ -11,11 +11,13 @@ import { IPaymentService, PaymentResult } from './payment.interface';
 import { PaymentProvider } from '../dto/create-subscription.dto';
 import { InvoiceService } from './invoice.service';
 import { EmailNotificationService } from './email-notification.service';
+import { PaymentGatewaySettingsService } from '../../super-admin/services/payment-gateway-settings.service';
 
 @Injectable()
 export class UnifiedPaymentService {
   private readonly logger = new Logger(UnifiedPaymentService.name);
   private paymentServices: Map<string, IPaymentService>;
+  private settingsInitialized = false;
 
   constructor(
     @InjectRepository(Subscription)
@@ -31,11 +33,84 @@ export class UnifiedPaymentService {
     private invoiceService: InvoiceService,
     @Inject(forwardRef(() => EmailNotificationService))
     private emailService: EmailNotificationService,
+    private paymentGatewaySettings: PaymentGatewaySettingsService,
   ) {
     this.paymentServices = new Map<string, IPaymentService>();
     this.paymentServices.set(PaymentProvider.STRIPE, this.stripeService);
     this.paymentServices.set(PaymentProvider.PAYPAL, this.paypalService);
     this.paymentServices.set(PaymentProvider.RAZORPAY, this.razorpayService);
+    
+    // Initialize payment services with settings on startup
+    this.initializePaymentServices();
+  }
+
+  /**
+   * Initialize payment services with settings from database
+   * Falls back to environment variables if settings not configured
+   */
+  private async initializePaymentServices(): Promise<void> {
+    try {
+      const settings = await this.paymentGatewaySettings.getSettings();
+      
+      // Update Stripe configuration
+      if (settings.stripe?.enabled && settings.stripe.secretKey) {
+        this.stripeService.updateConfiguration(settings.stripe.secretKey);
+        this.logger.log('Stripe payment service initialized with database settings');
+      } else {
+        this.logger.log('Stripe using environment variable configuration');
+      }
+
+      // Update PayPal configuration
+      if (settings.paypal?.enabled && settings.paypal.clientId && settings.paypal.clientSecret) {
+        this.paypalService.updateConfiguration(
+          settings.paypal.clientId,
+          settings.paypal.clientSecret,
+          settings.paypal.mode,
+        );
+        this.logger.log('PayPal payment service initialized with database settings');
+      } else {
+        this.logger.log('PayPal using environment variable configuration');
+      }
+
+      // Update Razorpay configuration
+      if (settings.razorpay?.enabled && settings.razorpay.keyId && settings.razorpay.keySecret) {
+        this.razorpayService.updateConfiguration(
+          settings.razorpay.keyId,
+          settings.razorpay.keySecret,
+        );
+        this.logger.log('Razorpay payment service initialized with database settings');
+      } else {
+        this.logger.log('Razorpay using environment variable configuration');
+      }
+
+      this.settingsInitialized = true;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to initialize payment services with database settings: ${error.message}. Falling back to environment variables.`,
+      );
+      // Continue with environment variable configuration
+      this.settingsInitialized = true;
+    }
+  }
+
+  /**
+   * Ensure payment services are initialized before use
+   * This is called before any payment operation
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.settingsInitialized) {
+      await this.initializePaymentServices();
+    }
+  }
+
+  /**
+   * Refresh payment service configurations from database
+   * Called when settings are updated via the settings UI
+   */
+  async refreshConfiguration(): Promise<void> {
+    this.logger.log('Refreshing payment service configurations from database');
+    this.settingsInitialized = false;
+    await this.initializePaymentServices();
   }
 
   async createSubscription(
@@ -45,6 +120,9 @@ export class UnifiedPaymentService {
     customerEmail: string,
     paymentMethodId?: string,
   ): Promise<Subscription> {
+    // Ensure payment services are initialized with latest settings
+    await this.ensureInitialized();
+
     // Get plan details
     const plan = await this.planRepository.findOne({ where: { id: planId } });
     if (!plan) {
@@ -136,6 +214,9 @@ export class UnifiedPaymentService {
     subscriptionId: string,
     provider: PaymentProvider,
   ): Promise<Subscription> {
+    // Ensure payment services are initialized
+    await this.ensureInitialized();
+
     const subscription = await this.subscriptionRepository.findOne({
       where: { id: subscriptionId },
     });
@@ -191,12 +272,15 @@ export class UnifiedPaymentService {
     signature: string,
     rawBody?: Buffer | string, // Optional raw body for providers that need it
   ): Promise<void> {
+    // Ensure payment services are initialized
+    await this.ensureInitialized();
+
     const paymentService = this.paymentServices.get(provider);
     if (!paymentService) {
       throw new BadRequestException('Invalid payment provider');
     }
 
-    const secret = this.getWebhookSecret(provider);
+    const secret = await this.getWebhookSecret(provider);
     
     const verification = await paymentService.verifyWebhook(
       payload,
@@ -213,6 +297,9 @@ export class UnifiedPaymentService {
   }
 
   async syncSubscriptionStatus(subscriptionId: string): Promise<Subscription> {
+    // Ensure payment services are initialized
+    await this.ensureInitialized();
+
     const subscription = await this.subscriptionRepository.findOne({
       where: { id: subscriptionId },
     });
@@ -263,6 +350,9 @@ export class UnifiedPaymentService {
     paymentMethodId?: string,
     metadata?: Record<string, any>,
   ): Promise<{ success: boolean; checkoutUrl?: string; transactionId?: string; error?: string }> {
+    // Ensure payment services are initialized
+    await this.ensureInitialized();
+
     this.logger.log(
       `Processing one-time payment of ${amount} for tenant ${tenantId} via ${provider}`,
     );
@@ -380,16 +470,34 @@ export class UnifiedPaymentService {
     throw new BadRequestException('No payment provider found for subscription');
   }
 
-  private getWebhookSecret(provider: PaymentProvider): string {
-    switch (provider) {
-      case PaymentProvider.STRIPE:
-        return process.env.STRIPE_WEBHOOK_SECRET || '';
-      case PaymentProvider.PAYPAL:
-        return process.env.PAYPAL_WEBHOOK_SECRET || '';
-      case PaymentProvider.RAZORPAY:
-        return process.env.RAZORPAY_WEBHOOK_SECRET || '';
-      default:
-        return '';
+  private async getWebhookSecret(provider: PaymentProvider): Promise<string> {
+    try {
+      const settings = await this.paymentGatewaySettings.getSettings();
+      
+      switch (provider) {
+        case PaymentProvider.STRIPE:
+          return settings.stripe?.webhookSecret || process.env.STRIPE_WEBHOOK_SECRET || '';
+        case PaymentProvider.PAYPAL:
+          // PayPal doesn't use webhook secrets in the same way
+          return process.env.PAYPAL_WEBHOOK_SECRET || '';
+        case PaymentProvider.RAZORPAY:
+          return settings.razorpay?.webhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET || '';
+        default:
+          return '';
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to get webhook secret from settings: ${error.message}. Using environment variable.`);
+      // Fallback to environment variables
+      switch (provider) {
+        case PaymentProvider.STRIPE:
+          return process.env.STRIPE_WEBHOOK_SECRET || '';
+        case PaymentProvider.PAYPAL:
+          return process.env.PAYPAL_WEBHOOK_SECRET || '';
+        case PaymentProvider.RAZORPAY:
+          return process.env.RAZORPAY_WEBHOOK_SECRET || '';
+        default:
+          return '';
+      }
     }
   }
 
@@ -710,6 +818,9 @@ export class UnifiedPaymentService {
       description?: string;
     },
   ): Promise<PaymentResult> {
+    // Ensure payment services are initialized
+    await this.ensureInitialized();
+
     this.logger.log(`Processing payment via ${provider}: ${params.amount} ${params.currency}`);
 
     const paymentService = this.paymentServices.get(provider);

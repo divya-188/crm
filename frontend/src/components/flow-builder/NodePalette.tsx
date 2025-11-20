@@ -153,26 +153,7 @@ export const nodeCategories: NodeCategory[] = [
       },
     ],
   },
-  {
-    name: 'Control',
-    icon: Play,
-    nodes: [
-      {
-        type: 'start',
-        label: 'Start',
-        icon: Play,
-        description: 'Flow entry point',
-        color: '#10b981',
-      },
-      {
-        type: 'end',
-        label: 'End',
-        icon: X,
-        description: 'Flow exit point',
-        color: '#f43f5e',
-      },
-    ],
-  },
+
 ];
 
 interface NodePaletteProps {

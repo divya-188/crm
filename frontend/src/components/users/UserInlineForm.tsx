@@ -7,7 +7,7 @@ import { User } from '../../types/models.types';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface UserInlineFormProps {
   onSuccess: () => void;
@@ -51,24 +51,24 @@ const UserInlineForm: React.FC<UserInlineFormProps> = ({
   const createMutation = useMutation({
     mutationFn: (data: CreateUserDto) => usersService.createUser(data),
     onSuccess: () => {
-      toast.success('User created successfully');
+      Toast.success('User created successfully');
       queryClient.invalidateQueries({ queryKey: ['users'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create user');
+      Toast.error(error.response?.data?.message || 'Failed to create user');
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateUserDto) => usersService.updateUser(user!.id, data),
     onSuccess: () => {
-      toast.success('User updated successfully');
+      Toast.success('User updated successfully');
       queryClient.invalidateQueries({ queryKey: ['users'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update user');
+      Toast.error(error.response?.data?.message || 'Failed to update user');
     },
   });
 
@@ -76,17 +76,17 @@ const UserInlineForm: React.FC<UserInlineFormProps> = ({
     e.preventDefault();
     
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      toast.error('First name and last name are required');
+      Toast.error('First name and last name are required');
       return;
     }
 
     if (!isEditMode && !formData.email.trim()) {
-      toast.error('Email is required');
+      Toast.error('Email is required');
       return;
     }
 
     if (!isEditMode && !formData.password.trim()) {
-      toast.error('Password is required');
+      Toast.error('Password is required');
       return;
     }
 

@@ -22,6 +22,7 @@ import { Inbox } from '@/pages/Inbox';
 import { Contacts } from '@/pages/Contacts';
 import FlowBuilder from '@/pages/FlowBuilder';
 import Templates from '@/pages/Templates';
+import { TemplateAnalytics } from '@/pages/TemplateAnalytics';
 import Campaigns from '@/pages/Campaigns';
 import CampaignDetail from '@/pages/CampaignDetail';
 import Automations from '@/pages/Automations';
@@ -150,6 +151,10 @@ export const router = createBrowserRouter([
         element: <Templates />,
       },
       {
+        path: 'templates/:id/analytics',
+        element: <TemplateAnalytics />,
+      },
+      {
         path: 'flows',
         element: <FlowBuilder />,
       },
@@ -231,7 +236,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <div className="text-center py-12">Platform Settings - Coming Soon</div>,
+        element: <Settings />,
       },
     ],
   },
@@ -271,7 +276,47 @@ export const router = createBrowserRouter([
       },
       {
         path: 'analytics',
-        element: <div className="text-center py-12">Analytics - Coming Soon</div>,
+        element: <Navigate to="/admin/analytics/conversations" replace />,
+      },
+      {
+        path: 'analytics/conversations',
+        element: <ConversationAnalytics />,
+      },
+      {
+        path: 'analytics/campaigns',
+        element: <CampaignAnalytics />,
+      },
+      {
+        path: 'analytics/agents',
+        element: <AgentPerformance />,
+      },
+      {
+        path: 'analytics/flows',
+        element: <FlowAnalytics />,
+      },
+      {
+        path: 'flows',
+        element: <FlowBuilder />,
+      },
+      {
+        path: 'automations',
+        element: <Automations />,
+      },
+      {
+        path: 'templates',
+        element: <Templates />,
+      },
+      {
+        path: 'templates/:id/analytics',
+        element: <TemplateAnalytics />,
+      },
+      {
+        path: 'campaigns',
+        element: <Campaigns />,
+      },
+      {
+        path: 'campaigns/:id',
+        element: <CampaignDetail />,
       },
       {
         path: 'security',
@@ -279,7 +324,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <div className="text-center py-12">Settings - Coming Soon</div>,
+        element: <Settings />,
       },
     ],
   },
@@ -311,7 +356,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <div className="text-center py-12">Settings - Coming Soon</div>,
+        element: <Settings />,
       },
     ],
   },

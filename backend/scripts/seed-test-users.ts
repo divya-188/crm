@@ -36,9 +36,9 @@ const seedTestUsers = async () => {
     // Create Admin user
     const adminPassword = await bcrypt.hash('Admin123!', 10);
     await dataSource.query(
-      `INSERT INTO users ("firstName", "lastName", email, "passwordHash", role, status, "tenantId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash"`,
+      `INSERT INTO users ("firstName", "lastName", email, "passwordHash", role, status, "tenantId", "deleted_at", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NOW(), NOW())
+       ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", "deleted_at" = NULL`,
       ['Admin', 'User', 'admin@test.com', adminPassword, 'admin', 'active', tenantId]
     );
     console.log('✓ Admin user created');
@@ -49,9 +49,9 @@ const seedTestUsers = async () => {
     // Create Agent user
     const agentPassword = await bcrypt.hash('Agent123!', 10);
     await dataSource.query(
-      `INSERT INTO users ("firstName", "lastName", email, "passwordHash", role, status, "tenantId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash"`,
+      `INSERT INTO users ("firstName", "lastName", email, "passwordHash", role, status, "tenantId", "deleted_at", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NOW(), NOW())
+       ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", "deleted_at" = NULL`,
       ['Agent', 'User', 'agent@test.com', agentPassword, 'agent', 'active', tenantId]
     );
     console.log('✓ Agent user created');
@@ -62,9 +62,9 @@ const seedTestUsers = async () => {
     // Create Regular User
     const userPassword = await bcrypt.hash('User123!', 10);
     await dataSource.query(
-      `INSERT INTO users ("firstName", "lastName", email, "passwordHash", role, status, "tenantId", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash"`,
+      `INSERT INTO users ("firstName", "lastName", email, "passwordHash", role, status, "tenantId", "deleted_at", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NOW(), NOW())
+       ON CONFLICT (email) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", "deleted_at" = NULL`,
       ['Regular', 'User', 'user@test.com', userPassword, 'user', 'active', tenantId]
     );
     console.log('✓ Regular user created');

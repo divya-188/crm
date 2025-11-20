@@ -1,0 +1,48 @@
+# Template Controller Permission Decorators
+
+This file documents the permission decorators that should be added to each endpoint in the templates controller.
+
+## Create/Update Operations
+- @Post() create - @TemplatePermissions(TemplatePermission.CREATE) ✓ DONE
+- @Patch(':id') update - @TemplatePermissions(TemplatePermission.UPDATE)
+- @Post(':id/duplicate') duplicate - @TemplatePermissions(TemplatePermission.CREATE)
+
+## Delete/Archive Operations
+- @Delete(':id') remove - @TemplatePermissions(TemplatePermission.DELETE)
+- @Post(':id/archive') archive - @TemplatePermissions(TemplatePermission.ARCHIVE)
+- @Post(':id/restore') restore - @TemplatePermissions(TemplatePermission.ARCHIVE)
+- @Post('bulk-archive') bulkArchive - @TemplatePermissions(TemplatePermission.ARCHIVE)
+- @Post('bulk-restore') bulkRestore - @TemplatePermissions(TemplatePermission.ARCHIVE)
+
+## Submission/Approval Operations
+- @Post(':id/submit') submit - @TemplatePermissions(TemplatePermission.SUBMIT)
+- @Post(':id/approve') approve - @TemplatePermissions(TemplatePermission.APPROVE)
+- @Post(':id/reject') reject - @TemplatePermissions(TemplatePermission.APPROVE)
+
+## Read Operations (All authenticated users)
+- @Get() findAll - @TemplatePermissions(TemplatePermission.READ)
+- @Get(':id') findOne - @TemplatePermissions(TemplatePermission.READ)
+- @Get('archived') findArchived - @TemplatePermissions(TemplatePermission.READ)
+- @Get(':id/versions') getVersions - @TemplatePermissions(TemplatePermission.READ)
+- @Get(':id/preview') preview - @TemplatePermissions(TemplatePermission.READ)
+- @Get(':id/status-history') statusHistory - @TemplatePermissions(TemplatePermission.READ)
+- @Get(':id/analytics') analytics - @TemplatePermissions(TemplatePermission.READ)
+
+## Import/Export Operations
+- @Post('import') import - @TemplatePermissions(TemplatePermission.IMPORT)
+- @Post('import/preview') importPreview - @TemplatePermissions(TemplatePermission.IMPORT)
+- @Get('export') export - @TemplatePermissions(TemplatePermission.EXPORT)
+- @Post('export') exportPost - @TemplatePermissions(TemplatePermission.EXPORT)
+
+## Media Operations
+- @Post('media/upload') uploadMedia - @TemplatePermissions(TemplatePermission.CREATE)
+
+## Testing Operations
+- @Post(':id/test') sendTest - @TemplatePermissions(TemplatePermission.CREATE)
+- @Post('test-phone-numbers') addTestNumber - @TemplatePermissions(TemplatePermission.CREATE)
+- @Delete('test-phone-numbers/:id') removeTestNumber - @TemplatePermissions(TemplatePermission.DELETE)
+
+## Public/Metadata Operations (No special permissions required)
+- @Post('validate') validate - No permission required (validation is free)
+- @Get('categories') getCategories - No permission required (metadata)
+- @Get('languages') getLanguages - No permission required (metadata)

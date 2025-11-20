@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Subscription } from '../entities/subscription.entity';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as nodemailer from 'nodemailer';
+import { EmailSettingsService, EmailConfig } from '../../super-admin/services/email-settings.service';
 
 /**
  * Email Notification Service for Subscription Events
@@ -9,11 +11,8 @@ import * as path from 'path';
  * This service handles sending email notifications for various subscription lifecycle events.
  * 
  * Email Provider Configuration:
- * Set EMAIL_PROVIDER in .env to one of: 'sendgrid', 'ses', 'smtp', 'console'
- * - sendgrid: Requires SENDGRID_API_KEY
- * - ses: Requires AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION)
- * - smtp: Requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
- * - console: Logs emails to console (default for development)
+ * Now uses settings from EmailSettingsService instead of environment variables.
+ * Supports: 'smtp', 'sendgrid', 'mailgun', 'console' (fallback)
  * 
  * Template System:
  * Uses Handlebars templates located in ./templates/
@@ -21,18 +20,60 @@ import * as path from 'path';
 @Injectable()
 export class EmailNotificationService {
   private readonly logger = new Logger(EmailNotificationService.name);
-  private readonly emailProvider: string;
-  private readonly fromEmail: string;
-  private readonly fromName: string;
   private readonly templatesPath: string;
+  private emailConfig: EmailConfig | null = null;
+  private configLoadedAt: Date | null = null;
+  private readonly CONFIG_CACHE_TTL = 300000; // 5 minutes
 
-  constructor() {
-    this.emailProvider = process.env.EMAIL_PROVIDER || 'console';
-    this.fromEmail = process.env.EMAIL_FROM || 'noreply@whatscrm.com';
-    this.fromName = process.env.EMAIL_FROM_NAME || 'WhatsApp CRM';
+  constructor(
+    private readonly emailSettingsService: EmailSettingsService,
+  ) {
     this.templatesPath = path.join(__dirname, '../templates');
+    this.logger.log('EmailNotificationService initialized with settings integration');
+  }
+
+  /**
+   * Get current email configuration from settings
+   * Caches config for 5 minutes to reduce database calls
+   */
+  private async getEmailConfig(): Promise<EmailConfig> {
+    const now = new Date();
     
-    this.logger.log(`Email provider configured: ${this.emailProvider}`);
+    // Return cached config if still valid
+    if (
+      this.emailConfig && 
+      this.configLoadedAt && 
+      (now.getTime() - this.configLoadedAt.getTime()) < this.CONFIG_CACHE_TTL
+    ) {
+      return this.emailConfig;
+    }
+
+    // Load fresh config from settings
+    try {
+      this.emailConfig = await this.emailSettingsService.getSettings();
+      this.configLoadedAt = now;
+      this.logger.log(`Email config loaded: provider=${this.emailConfig.provider}`);
+      return this.emailConfig;
+    } catch (error) {
+      this.logger.error('Failed to load email settings, using fallback', error);
+      // Fallback to console mode if settings can't be loaded
+      return {
+        provider: 'smtp',
+        from: {
+          name: process.env.EMAIL_FROM_NAME || 'WhatsApp CRM',
+          email: process.env.EMAIL_FROM || 'noreply@whatscrm.com',
+        },
+      };
+    }
+  }
+
+  /**
+   * Invalidate cached email config (call this when settings are updated)
+   */
+  invalidateConfigCache(): void {
+    this.emailConfig = null;
+    this.configLoadedAt = null;
+    this.logger.log('Email config cache invalidated');
   }
 
   /**
@@ -45,21 +86,29 @@ export class EmailNotificationService {
     text?: string;
   }): Promise<void> {
     const { to, subject, html, text } = params;
+    const config = await this.getEmailConfig();
 
-    switch (this.emailProvider) {
-      case 'sendgrid':
-        await this.sendViaSendGrid(to, subject, html, text);
-        break;
-      case 'ses':
-        await this.sendViaSES(to, subject, html, text);
-        break;
-      case 'smtp':
-        await this.sendViaSMTP(to, subject, html, text);
-        break;
-      case 'console':
-      default:
-        this.logEmailToConsole(to, subject, html);
-        break;
+    try {
+      switch (config.provider) {
+        case 'sendgrid':
+          await this.sendViaSendGrid(to, subject, html, text, config);
+          break;
+        case 'mailgun':
+          await this.sendViaMailgun(to, subject, html, text, config);
+          break;
+        case 'smtp':
+          await this.sendViaSMTP(to, subject, html, text, config);
+          break;
+        default:
+          this.logger.warn(`Unknown email provider: ${config.provider}, falling back to console`);
+          this.logEmailToConsole(to, subject, html);
+          break;
+      }
+    } catch (error) {
+      this.logger.error(`Failed to send email via ${config.provider}`, error);
+      // Log to console as fallback
+      this.logEmailToConsole(to, subject, html);
+      throw error;
     }
   }
 
@@ -71,32 +120,78 @@ export class EmailNotificationService {
     subject: string,
     html: string,
     text?: string,
+    config?: EmailConfig,
   ): Promise<void> {
-    // TODO: Implement SendGrid integration
-    // const sgMail = require('@sendgrid/mail');
-    // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    // await sgMail.send({ to, from: this.fromEmail, subject, html, text });
-    
-    this.logger.log(`[SendGrid] Would send email to ${to}: ${subject}`);
-    this.logEmailToConsole(to, subject, html);
+    if (!config?.sendgrid?.apiKey) {
+      throw new Error('SendGrid API key not configured');
+    }
+
+    try {
+      const sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(config.sendgrid.apiKey);
+      
+      await sgMail.send({
+        to,
+        from: `"${config.from.name}" <${config.from.email}>`,
+        subject,
+        html,
+        text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML tags for text version
+      });
+      
+      this.logger.log(`[SendGrid] Email sent successfully to ${to}: ${subject}`);
+    } catch (error) {
+      this.logger.error(`[SendGrid] Failed to send email to ${to}`, error);
+      throw error;
+    }
   }
 
   /**
-   * Send email via AWS SES
+   * Send email via Mailgun
    */
-  private async sendViaSES(
+  private async sendViaMailgun(
     to: string,
     subject: string,
     html: string,
     text?: string,
+    config?: EmailConfig,
   ): Promise<void> {
-    // TODO: Implement AWS SES integration
-    // const AWS = require('aws-sdk');
-    // const ses = new AWS.SES({ region: process.env.AWS_REGION });
-    // await ses.sendEmail({ ... }).promise();
-    
-    this.logger.log(`[AWS SES] Would send email to ${to}: ${subject}`);
-    this.logEmailToConsole(to, subject, html);
+    if (!config?.mailgun?.apiKey || !config?.mailgun?.domain) {
+      throw new Error('Mailgun API key and domain not configured');
+    }
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append('from', `${config.from.name} <${config.from.email}>`);
+      formData.append('to', to);
+      formData.append('subject', subject);
+      formData.append('html', html);
+      if (text) {
+        formData.append('text', text);
+      }
+
+      const auth = Buffer.from(`api:${config.mailgun.apiKey}`).toString('base64');
+      const response = await fetch(
+        `https://api.mailgun.net/v3/${config.mailgun.domain}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString(),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Mailgun API error: ${error}`);
+      }
+
+      this.logger.log(`[Mailgun] Email sent successfully to ${to}: ${subject}`);
+    } catch (error) {
+      this.logger.error(`[Mailgun] Failed to send email to ${to}`, error);
+      throw error;
+    }
   }
 
   /**
@@ -107,14 +202,36 @@ export class EmailNotificationService {
     subject: string,
     html: string,
     text?: string,
+    config?: EmailConfig,
   ): Promise<void> {
-    // TODO: Implement SMTP integration
-    // const nodemailer = require('nodemailer');
-    // const transporter = nodemailer.createTransport({ ... });
-    // await transporter.sendMail({ from: this.fromEmail, to, subject, html, text });
-    
-    this.logger.log(`[SMTP] Would send email to ${to}: ${subject}`);
-    this.logEmailToConsole(to, subject, html);
+    if (!config?.smtp?.host || !config?.smtp?.auth) {
+      throw new Error('SMTP configuration not complete');
+    }
+
+    try {
+      const transporter = nodemailer.createTransport({
+        host: config.smtp.host,
+        port: config.smtp.port,
+        secure: config.smtp.secure,
+        auth: {
+          user: config.smtp.auth.user,
+          pass: config.smtp.auth.pass,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"${config.from.name}" <${config.from.email}>`,
+        to,
+        subject,
+        html,
+        text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML tags for text version
+      });
+
+      this.logger.log(`[SMTP] Email sent successfully to ${to}: ${subject}`);
+    } catch (error) {
+      this.logger.error(`[SMTP] Failed to send email to ${to}`, error);
+      throw error;
+    }
   }
 
   /**
@@ -405,18 +522,105 @@ export class EmailNotificationService {
     }>;
   }): Promise<void> {
     const { to, subject, html, text, attachments } = params;
+    const config = await this.getEmailConfig();
 
-    // For now, just log that we would send with attachment
-    // In production, this would use the actual email provider's attachment API
-    if (attachments && attachments.length > 0) {
-      this.logger.log(`Would send email to ${to} with ${attachments.length} attachment(s)`);
-      attachments.forEach(att => {
-        this.logger.log(`  - ${att.filename} (${att.contentType}, ${att.content.length} bytes)`);
-      });
+    try {
+      // Only SMTP and SendGrid support attachments in our current implementation
+      if (config.provider === 'smtp' && config.smtp) {
+        await this.sendViaSMTPWithAttachment(to, subject, html, text, attachments, config);
+      } else if (config.provider === 'sendgrid' && config.sendgrid) {
+        await this.sendViaSendGridWithAttachment(to, subject, html, text, attachments, config);
+      } else {
+        // For other providers, log and send without attachment
+        this.logger.warn(`Attachments not supported for provider: ${config.provider}`);
+        if (attachments && attachments.length > 0) {
+          this.logger.log(`Would send email to ${to} with ${attachments.length} attachment(s)`);
+          attachments.forEach(att => {
+            this.logger.log(`  - ${att.filename} (${att.contentType}, ${att.content.length} bytes)`);
+          });
+        }
+        await this.sendEmail({ to, subject, html, text });
+      }
+    } catch (error) {
+      this.logger.error('Failed to send email with attachment', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send email with attachments via SMTP
+   */
+  private async sendViaSMTPWithAttachment(
+    to: string,
+    subject: string,
+    html: string,
+    text: string | undefined,
+    attachments: Array<{ filename: string; content: Buffer; contentType: string }> | undefined,
+    config: EmailConfig,
+  ): Promise<void> {
+    if (!config.smtp?.host || !config.smtp?.auth) {
+      throw new Error('SMTP configuration not complete');
     }
 
-    // Fall back to regular email sending
-    await this.sendEmail({ to, subject, html, text });
+    const transporter = nodemailer.createTransport({
+      host: config.smtp.host,
+      port: config.smtp.port,
+      secure: config.smtp.secure,
+      auth: {
+        user: config.smtp.auth.user,
+        pass: config.smtp.auth.pass,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"${config.from.name}" <${config.from.email}>`,
+      to,
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>/g, ''),
+      attachments: attachments?.map(att => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+      })),
+    });
+
+    this.logger.log(`[SMTP] Email with ${attachments?.length || 0} attachment(s) sent to ${to}`);
+  }
+
+  /**
+   * Send email with attachments via SendGrid
+   */
+  private async sendViaSendGridWithAttachment(
+    to: string,
+    subject: string,
+    html: string,
+    text: string | undefined,
+    attachments: Array<{ filename: string; content: Buffer; contentType: string }> | undefined,
+    config: EmailConfig,
+  ): Promise<void> {
+    if (!config.sendgrid?.apiKey) {
+      throw new Error('SendGrid API key not configured');
+    }
+
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(config.sendgrid.apiKey);
+
+    await sgMail.send({
+      to,
+      from: `"${config.from.name}" <${config.from.email}>`,
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>/g, ''),
+      attachments: attachments?.map(att => ({
+        filename: att.filename,
+        content: att.content.toString('base64'),
+        type: att.contentType,
+        disposition: 'attachment',
+      })),
+    });
+
+    this.logger.log(`[SendGrid] Email with ${attachments?.length || 0} attachment(s) sent to ${to}`);
   }
 
   /**

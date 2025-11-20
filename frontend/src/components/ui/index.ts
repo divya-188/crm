@@ -74,3 +74,13 @@ export type { InfiniteScrollIndicatorProps, IndicatorState } from './InfiniteScr
 
 export { default as EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
+
+// User Feedback Components
+export { default as ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';
+
+export { default as LoadingOverlay } from './LoadingOverlay';
+export type { LoadingOverlayProps } from './LoadingOverlay';
+
+export { default as ProgressIndicator } from './ProgressIndicator';
+export type { ProgressIndicatorProps, ProgressStep } from './ProgressIndicator';

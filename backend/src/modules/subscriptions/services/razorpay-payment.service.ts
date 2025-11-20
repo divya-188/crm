@@ -7,6 +7,8 @@ import { IPaymentService, PaymentResult, WebhookVerificationResult } from './pay
 export class RazorpayPaymentService implements IPaymentService {
   private readonly logger = new Logger(RazorpayPaymentService.name)
   private razorpay: any
+  private currentKeyId: string | null = null
+  private currentKeySecret: string | null = null
 
   constructor() {
     const Razorpay = require('razorpay')
@@ -17,7 +19,30 @@ export class RazorpayPaymentService implements IPaymentService {
       this.logger.warn('Razorpay credentials not configured')
     }
 
+    this.currentKeyId = key_id
+    this.currentKeySecret = key_secret
     this.razorpay = new Razorpay({ key_id, key_secret })
+  }
+
+  /**
+   * Update Razorpay configuration dynamically
+   * Called by UnifiedPaymentService when settings change
+   */
+  updateConfiguration(keyId: string, keySecret: string): void {
+    if (keyId && keySecret && (keyId !== this.currentKeyId || keySecret !== this.currentKeySecret)) {
+      this.logger.log('Updating Razorpay configuration with new credentials')
+      this.currentKeyId = keyId
+      this.currentKeySecret = keySecret
+      const Razorpay = require('razorpay')
+      this.razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret })
+    }
+  }
+
+  /**
+   * Get current Razorpay instance (for internal use)
+   */
+  getRazorpayInstance(): any {
+    return this.razorpay
   }
 
   async createSubscription(

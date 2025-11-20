@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import settingsService from '../../services/settings.service';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 
@@ -22,7 +22,7 @@ export default function PasswordSettings() {
   const changePasswordMutation = useMutation({
     mutationFn: settingsService.changePassword,
     onSuccess: () => {
-      toast.success('Password changed successfully');
+      Toast.success('Password changed successfully');
       setFormData({
         currentPassword: '',
         newPassword: '',
@@ -30,7 +30,7 @@ export default function PasswordSettings() {
       });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to change password');
+      Toast.error(error.response?.data?.message || 'Failed to change password');
     },
   });
 
@@ -38,12 +38,12 @@ export default function PasswordSettings() {
     e.preventDefault();
 
     if (formData.newPassword !== formData.confirmPassword) {
-      toast.error('New passwords do not match');
+      Toast.error('New passwords do not match');
       return;
     }
 
     if (formData.newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+      Toast.error('Password must be at least 8 characters long');
       return;
     }
 

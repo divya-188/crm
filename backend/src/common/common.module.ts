@@ -1,36 +1,39 @@
 import { Module, Global } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import redisConfig from '../config/redis.config';
+import { ConfigModule } from '@nestjs/config';
+
+// Services
 import { RedisService } from './services/redis.service';
 import { SessionService } from './services/session.service';
-import { CacheInterceptor } from './interceptors/cache.interceptor';
-import { TenantGuard } from './guards/tenant.guard';
-import { TenantsModule } from '../modules/tenants/tenants.module';
-import { GracePeriodWarningMiddleware } from './middleware/grace-period-warning.middleware';
-import { Subscription } from '../modules/subscriptions/entities/subscription.entity';
+import { EncryptionService } from './services/encryption.service';
+import { SettingsCacheService } from './services/settings-cache.service';
+import { SettingsAuditService } from './services/settings-audit.service';
+import { FileUploadService } from './services/file-upload.service';
+
+// Entities
+import { SettingsAuditLog } from './entities/settings-audit-log.entity';
 
 @Global()
 @Module({
   imports: [
-    ConfigModule.forFeature(redisConfig),
-    TenantsModule,
-    TypeOrmModule.forFeature([Subscription]),
+    ConfigModule,
+    TypeOrmModule.forFeature([SettingsAuditLog]),
   ],
   providers: [
     RedisService,
     SessionService,
-    CacheInterceptor,
-    TenantGuard,
-    GracePeriodWarningMiddleware,
+    EncryptionService,
+    SettingsCacheService,
+    SettingsAuditService,
+    FileUploadService,
   ],
   exports: [
-    TypeOrmModule,
     RedisService,
     SessionService,
-    CacheInterceptor,
-    TenantGuard,
-    GracePeriodWarningMiddleware,
+    EncryptionService,
+    SettingsCacheService,
+    SettingsAuditService,
+    FileUploadService,
   ],
 })
 export class CommonModule {}

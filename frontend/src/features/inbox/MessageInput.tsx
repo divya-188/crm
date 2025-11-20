@@ -6,17 +6,19 @@ import {
   Smile,
   Loader2,
   Zap,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSendMessage } from '@/hooks/useConversations';
 import { useSocket } from '@/hooks/useSocket';
 import { MessageType } from '@/types/models.types';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import { mediaService } from '@/services';
 import { EmojiPicker } from './EmojiPicker';
 import { MediaUpload } from './MediaUpload';
 import { SavedResponsesDropdown } from './SavedResponsesDropdown';
 import { FilePreview } from './FilePreview';
+import { TemplateMessageComposer } from '@/components/templates/messaging';
 
 interface MessageInputProps {
   conversationId: string;
@@ -33,6 +35,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [showSavedResponses, setShowSavedResponses] = useState(false);
+  const [showTemplateComposer, setShowTemplateComposer] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -98,7 +101,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
           mimeType: uploadedFile.file.type,
         };
       } catch (error) {
-        toast.error('Failed to upload file');
+        Toast.error('Failed to upload file');
         setIsUploading(false);
         return;
       }
@@ -117,7 +120,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
         textareaRef.current?.focus();
       },
       onError: (error: any) => {
-        toast.error(error.response?.data?.error?.message || 'Failed to send message');
+        Toast.error(error.response?.data?.error?.message || 'Failed to send message');
       },
     });
   };
@@ -174,6 +177,28 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
       console.error('Media upload error:', error);
       throw new Error('Failed to upload media file');
     }
+  };
+
+  const handleTemplateSend = async (templateId: string, variableValues: Record<string, string>) => {
+    const messageData: any = {
+      conversationId,
+      type: 'template',
+      templateId,
+      variableValues,
+    };
+
+    return new Promise<void>((resolve, reject) => {
+      sendMessage(messageData, {
+        onSuccess: () => {
+          Toast.success('Template message sent successfully');
+          resolve();
+        },
+        onError: (error: any) => {
+          Toast.error(error.response?.data?.error?.message || 'Failed to send template message');
+          reject(error);
+        },
+      });
+    });
   };
 
   const canSend = (message.trim() || uploadedFile) && !isSending && !isUploading;
@@ -257,6 +282,17 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Template Messages */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowTemplateComposer(true)}
+              className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
+              title="Send template message"
+            >
+              <FileText size={20} />
+            </motion.button>
           </div>
 
           {/* Text Input */}
@@ -333,6 +369,17 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
           Press Enter to send, Shift+Enter for new line
         </div>
       </div>
+
+      {/* Template Message Composer Modal */}
+      <AnimatePresence>
+        {showTemplateComposer && (
+          <TemplateMessageComposer
+            isOpen={showTemplateComposer}
+            onClose={() => setShowTemplateComposer(false)}
+            onSend={handleTemplateSend}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

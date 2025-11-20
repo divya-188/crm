@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
@@ -27,6 +27,7 @@ import { Flow } from '../flows/entities/flow.entity';
 import { Automation } from '../automations/entities/automation.entity';
 import { WhatsAppConnection } from '../whatsapp/entities/whatsapp-connection.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
+import { SuperAdminModule } from '../super-admin/super-admin.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       WhatsAppConnection,
       Tenant,
     ]),
+    forwardRef(() => SuperAdminModule),
   ],
   controllers: [SubscriptionPlansController, SubscriptionsController],
   providers: [

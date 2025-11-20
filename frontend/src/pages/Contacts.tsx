@@ -12,7 +12,7 @@ import Card from '@/components/ui/Card';
 import Spinner from '@/components/ui/Spinner';
 import { contactsService } from '@/services';
 import { Contact, ContactSegment } from '@/types/models.types';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import ContactInlineForm from '@/components/contacts/ContactInlineForm';
 import { ContactDetailModal } from '@/components/contacts/ContactDetailModal';
 import { ContactImportModal } from '@/components/contacts/ContactImportModal';
@@ -82,7 +82,7 @@ export const Contacts = () => {
       const data = await contactsService.getSegments();
       setSegments(data);
     } catch (error) {
-      toast.error('Failed to load segments');
+      Toast.error('Failed to load segments');
     } finally {
       setIsLoadingSegments(false);
     }
@@ -110,10 +110,10 @@ export const Contacts = () => {
     if (window.confirm('Are you sure?')) {
       try {
         await contactsService.deleteContact(contact.id);
-        toast.success('Contact deleted');
+        Toast.success('Contact deleted');
         queryClient.invalidateQueries({ queryKey: ['contacts'] });
       } catch (error) {
-        toast.error('Failed to delete contact');
+        Toast.error('Failed to delete contact');
       }
     }
     setOpenDropdown(null);
@@ -133,9 +133,9 @@ export const Contacts = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success('Contacts exported');
+      Toast.success('Contacts exported');
     } catch (error) {
-      toast.error('Failed to export');
+      Toast.error('Failed to export');
     }
   };
 
@@ -158,7 +158,7 @@ export const Contacts = () => {
             <button onClick={() => setActiveTab('custom-fields')} className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'custom-fields' ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-neutral-500'}`}>Custom Fields</button>
           </nav>
         </div>
-        {activeTab === 'segments' && <SegmentList segments={segments} onView={(s) => { setSelectedSegment(s); setShowSegmentViewModal(true); }} onEdit={(s) => { setSelectedSegment(s); setShowSegmentModal(true); }} onDelete={async (id) => { if (window.confirm('Delete segment?')) { try { await contactsService.deleteSegment(id); toast.success('Segment deleted'); loadSegments(); } catch (error) { toast.error('Failed to delete'); } } }} isLoading={isLoadingSegments} />}
+        {activeTab === 'segments' && <SegmentList segments={segments} onView={(s) => { setSelectedSegment(s); setShowSegmentViewModal(true); }} onEdit={(s) => { setSelectedSegment(s); setShowSegmentModal(true); }} onDelete={async (id) => { if (window.confirm('Delete segment?')) { try { await contactsService.deleteSegment(id); Toast.success('Segment deleted'); loadSegments(); } catch (error) { Toast.error('Failed to delete'); } } }} isLoading={isLoadingSegments} />}
         {activeTab === 'custom-fields' && <CustomFieldsManager />}
         <SegmentModal isOpen={showSegmentModal} onClose={() => setShowSegmentModal(false)} segment={selectedSegment} onSuccess={() => { setShowSegmentModal(false); loadSegments(); }} />
         {selectedSegment && <SegmentViewModal isOpen={showSegmentViewModal} onClose={() => setShowSegmentViewModal(false)} segment={selectedSegment} />}

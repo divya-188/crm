@@ -51,14 +51,8 @@ import TestDataModal from '@/components/flow-builder/TestDataModal';
 import { flowsService } from '@/services/flows.service';
 import toast from '@/lib/toast';
 
-const initialNodes: Node[] = [
-  {
-    id: '1',
-    type: 'start',
-    data: { label: 'Start', nodeType: 'start' },
-    position: { x: 250, y: 50 },
-  },
-];
+// Start with empty canvas - users drag nodes to build flows
+const initialNodes: Node[] = [];
 
 const initialEdges: Edge[] = [];
 
@@ -70,8 +64,57 @@ const FlowBuilderContent: React.FC = () => {
     BackgroundVariant.Dots
   );
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { zoomIn, zoomOut, fitView, getNodes, getEdges, project } = useReactFlow();
+  const { zoomIn, zoomOut, fitView, getNodes, getEdges, project, setViewport } = useReactFlow();
   const [nodeIdCounter, setNodeIdCounter] = useState(2);
+
+  // Set default zoom to 30% on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setViewport({ x: 0, y: 0, zoom: 0.3 }, { duration: 0 });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [setViewport]);
+
+  // Auto-collapse sidebar on mount for more canvas space
+  useEffect(() => {
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      // Find the Menu button in the header
+      const menuButtons = document.querySelectorAll('button');
+      let toggleButton: HTMLButtonElement | null = null;
+      
+      // Find the button with Menu icon (has svg with specific path)
+      menuButtons.forEach((btn) => {
+        const svg = btn.querySelector('svg');
+        if (svg && btn.className.includes('hover:bg-neutral-100')) {
+          toggleButton = btn;
+        }
+      });
+      
+      if (toggleButton) {
+        // Check if sidebar is currently expanded
+        const sidebar = document.querySelector('aside') as HTMLElement;
+        const wasExpanded = sidebar && sidebar.offsetWidth > 80;
+        
+        // Collapse sidebar if expanded
+        if (wasExpanded) {
+          toggleButton.click();
+        }
+        
+        // Restore sidebar on unmount
+        return () => {
+          const sidebar = document.querySelector('aside') as HTMLElement;
+          const isCollapsed = sidebar && sidebar.offsetWidth <= 80;
+          
+          if (isCollapsed && toggleButton) {
+            toggleButton.click();
+          }
+        };
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Modal states
   const [messageModalOpen, setMessageModalOpen] = useState(false);
@@ -90,7 +133,8 @@ const FlowBuilderContent: React.FC = () => {
   const [executionError, setExecutionError] = useState<string | undefined>();
   const [isExecutionRunning, setIsExecutionRunning] = useState(false);
   const [currentExecutionStep, setCurrentExecutionStep] = useState(0);
-  const [flowId] = useState<string | null>(null); // TODO: Set this when saving/loading flows
+  const [flowId, setFlowId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -257,9 +301,72 @@ const FlowBuilderContent: React.FC = () => {
     setSelectedNodeId(null);
   }, [selectedNodeId, setNodes]);
 
-  const handleSave = () => {
-    console.log('Saving flow:', { nodes, edges, name: flowName });
-    // TODO: Implement save functionality
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Validate flow has at least a start node
+      if (nodes.length === 0) {
+        toast.error('Cannot save an empty flow');
+        return;
+      }
+
+      // Check if any nodes need configuration
+      const unconfiguredNodes = nodes.filter(
+        (node) => node.type !== 'start' && node.data.isValid === false
+      );
+      
+      if (unconfiguredNodes.length > 0) {
+        toast.error(
+          `Please configure ${unconfiguredNodes.length} node${
+            unconfiguredNodes.length > 1 ? 's' : ''
+          } before saving`
+        );
+        return;
+      }
+
+      const flowPayload = {
+        name: flowName,
+        description: `Flow with ${nodes.length} nodes and ${edges.length} connections`,
+        triggerType: 'manual' as const, // Default trigger type
+        flowData: {
+          nodes: nodes.map((node) => ({
+            id: node.id,
+            type: node.type || 'unknown',
+            position: node.position,
+            data: node.data,
+          })),
+          edges: edges.map((edge) => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: edge.sourceHandle || undefined,
+            targetHandle: edge.targetHandle || undefined,
+          })),
+        },
+      };
+
+      console.log('Saving flow:', flowPayload);
+
+      let savedFlow;
+      if (flowId) {
+        // Update existing flow
+        savedFlow = await flowsService.updateFlow(flowId, flowPayload);
+        toast.success('Flow updated successfully');
+      } else {
+        // Create new flow
+        savedFlow = await flowsService.createFlow(flowPayload);
+        setFlowId(savedFlow.id);
+        toast.success('Flow created successfully');
+      }
+
+      console.log('Flow saved:', savedFlow);
+    } catch (error: any) {
+      console.error('Error saving flow:', error);
+      toast.error(error.response?.data?.message || 'Failed to save flow');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleTest = () => {
@@ -600,9 +707,11 @@ const FlowBuilderContent: React.FC = () => {
               size="sm"
               onClick={handleSave}
               className="gap-2"
+              disabled={isSaving}
+              loading={isSaving}
             >
               <Save className="w-4 h-4" />
-              Save
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

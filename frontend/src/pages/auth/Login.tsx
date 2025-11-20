@@ -4,7 +4,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth.store';
 import { authService } from '@/services/auth.service';
 import { getErrorMessage } from '@/lib/api-client';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ export const Login: React.FC = () => {
       setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
 
       // Show success message
-      toast.success(`Welcome back, ${response.user.firstName}!`);
+      Toast.success(`Welcome back, ${response.user.firstName}!`);
 
       // Navigate based on user role
       const redirectPath =
@@ -47,7 +47,7 @@ export const Login: React.FC = () => {
     } catch (err) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
-      toast.error(errorMessage);
+      Toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

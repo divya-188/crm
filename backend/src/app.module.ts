@@ -25,7 +25,6 @@ import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { PublicApiModule } from './modules/public-api/public-api.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
-import { GracePeriodWarningMiddleware } from './common/middleware/grace-period-warning.middleware';
 
 @Module({
   imports: [
@@ -70,8 +69,6 @@ import { GracePeriodWarningMiddleware } from './common/middleware/grace-period-w
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(GracePeriodWarningMiddleware)
-      .forRoutes('*'); // Apply to all routes
+    // Middleware configuration can be added here
   }
 }

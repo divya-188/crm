@@ -194,7 +194,7 @@ export interface SendMessageDto {
 
 export type TemplateCategory = 'marketing' | 'utility' | 'authentication';
 export type TemplateHeaderType = 'text' | 'image' | 'video' | 'document';
-export type TemplateStatus = 'draft' | 'pending' | 'approved' | 'rejected';
+export type TemplateStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'superseded';
 
 export interface Template {
   id: string;
@@ -208,10 +208,18 @@ export interface Template {
   buttons?: TemplateButton[];
   variables?: TemplateVariable[];
   externalId?: string;
+  wabaId?: string;
   status: TemplateStatus;
   rejectionReason?: string;
   submittedAt?: string;
   approvedAt?: string;
+  rejectedAt?: string;
+  version: number;
+  parentTemplateId?: string;
+  isActive: boolean;
+  usageCount: number;
+  lastUsedAt?: string;
+  qualityScore?: number;
   createdAt: string;
   updatedAt: string;
 }

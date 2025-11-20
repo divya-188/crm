@@ -9,6 +9,10 @@ import {
   Shield,
   BarChart3,
   UserCircle,
+  Workflow,
+  Zap,
+  MessageSquare,
+  Mail,
 } from 'lucide-react';
 import { Sidebar, SidebarSection } from './Sidebar';
 import { Header } from './Header';
@@ -45,6 +49,31 @@ const sidebarSections: SidebarSection[] = [
         name: 'Contacts',
         path: '/admin/contacts',
         icon: UserCircle,
+      },
+    ],
+  },
+  {
+    title: 'Automation',
+    items: [
+      {
+        name: 'Flow Builder',
+        path: '/admin/flows',
+        icon: Workflow,
+      },
+      {
+        name: 'Automations',
+        path: '/admin/automations',
+        icon: Zap,
+      },
+      {
+        name: 'Templates',
+        path: '/admin/templates',
+        icon: MessageSquare,
+      },
+      {
+        name: 'Campaigns',
+        path: '/admin/campaigns',
+        icon: Mail,
       },
     ],
   },

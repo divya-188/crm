@@ -24,7 +24,7 @@ import {
   DotsLoader,
 } from './index';
 import { Icons } from '../../lib/icons';
-import { showToast } from '../../lib/toast';
+import Toast from '@/lib/toast-system';
 import { staggerContainer } from '../../lib/motion-variants';
 
 const ComponentShowcase: React.FC = () => {
@@ -265,25 +265,25 @@ const ComponentShowcase: React.FC = () => {
           <div className="flex flex-wrap gap-3">
             <Button
               variant="success"
-              onClick={() => showToast.success('Operation completed successfully!')}
+              onClick={() => Toast.success('Operation completed successfully!')}
             >
               Success Toast
             </Button>
             <Button
               variant="danger"
-              onClick={() => showToast.error('An error occurred!', 'Error')}
+              onClick={() => Toast.error('An error occurred!')}
             >
               Error Toast
             </Button>
             <Button
               variant="warning"
-              onClick={() => showToast.warning('Please review your input')}
+              onClick={() => Toast.warning('Please review your input')}
             >
               Warning Toast
             </Button>
             <Button
               variant="secondary"
-              onClick={() => showToast.info('Here is some information')}
+              onClick={() => Toast.info('Here is some information')}
             >
               Info Toast
             </Button>

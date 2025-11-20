@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Image as ImageIcon, Video, FileText, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MessageType } from '@/types/models.types';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface MediaUploadProps {
   onFileSelect: (file: File, type: MessageType) => void;
@@ -75,7 +75,7 @@ export const MediaUpload: React.FC<MediaUploadProps> = ({ onFileSelect, onClose 
 
     // Validate file size
     if (file.size > maxSize) {
-      toast.error(`File size must be less than ${formatFileSize(maxSize)}`);
+      Toast.error(`File size must be less than ${formatFileSize(maxSize)}`);
       return;
     }
 

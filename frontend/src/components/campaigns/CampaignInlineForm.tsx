@@ -14,7 +14,7 @@ import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 import Spinner from '../ui/Spinner';
 import { SegmentBuilder } from '@/components/contacts/SegmentBuilder';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface CampaignInlineFormProps {
   onSuccess: () => void;
@@ -86,22 +86,22 @@ const CampaignInlineForm: React.FC<CampaignInlineFormProps> = ({
       contactsService.previewSegment(criteria),
     onSuccess: (data) => {
       setAudienceCount(data.count);
-      toast.success(`Audience: ${data.count} contacts`);
+      Toast.success(`Audience: ${data.count} contacts`);
     },
     onError: () => {
-      toast.error('Failed to preview audience');
+      Toast.error('Failed to preview audience');
     },
   });
 
   const createMutation = useMutation({
     mutationFn: (data: CreateCampaignDto) => campaignsService.createCampaign(data),
     onSuccess: () => {
-      toast.success('Campaign created successfully');
+      Toast.success('Campaign created successfully');
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create campaign');
+      Toast.error(error.response?.data?.message || 'Failed to create campaign');
     },
   });
 
@@ -109,12 +109,12 @@ const CampaignInlineForm: React.FC<CampaignInlineFormProps> = ({
     mutationFn: (data: Partial<CreateCampaignDto>) =>
       campaignsService.updateCampaign(campaign!.id, data),
     onSuccess: () => {
-      toast.success('Campaign updated successfully');
+      Toast.success('Campaign updated successfully');
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
       onSuccess();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update campaign');
+      Toast.error(error.response?.data?.message || 'Failed to update campaign');
     },
   });
 
@@ -122,22 +122,22 @@ const CampaignInlineForm: React.FC<CampaignInlineFormProps> = ({
     e.preventDefault();
 
     if (!formData.name?.trim()) {
-      toast.error('Campaign name is required');
+      Toast.error('Campaign name is required');
       return;
     }
 
     if (!formData.templateId) {
-      toast.error('Please select a template');
+      Toast.error('Please select a template');
       return;
     }
 
     if (segmentCriteria.conditions.length === 0) {
-      toast.error('Please define your target audience');
+      Toast.error('Please define your target audience');
       return;
     }
 
     if (scheduleType === 'later' && (!scheduledDate || !scheduledTime)) {
-      toast.error('Please set schedule date and time');
+      Toast.error('Please set schedule date and time');
       return;
     }
 
@@ -170,7 +170,7 @@ const CampaignInlineForm: React.FC<CampaignInlineFormProps> = ({
 
   const handlePreviewAudience = () => {
     if (segmentCriteria.conditions.length === 0) {
-      toast.error('Please add at least one condition');
+      Toast.error('Please add at least one condition');
       return;
     }
     previewAudienceMutation.mutate(segmentCriteria);

@@ -10,8 +10,10 @@ import {
 export class StripePaymentService implements IPaymentService {
   private readonly logger = new Logger(StripePaymentService.name);
   private stripe: Stripe;
+  private currentSecretKey: string | null = null;
 
   constructor() {
+    // Initialize with environment variable as fallback
     const apiKey = process.env.STRIPE_SECRET_KEY;
     if (!apiKey) {
       this.logger.warn('Stripe API key not configured');
@@ -20,10 +22,32 @@ export class StripePaymentService implements IPaymentService {
         apiVersion: '2025-10-29.clover',
       });
     } else {
+      this.currentSecretKey = apiKey;
       this.stripe = new Stripe(apiKey, {
         apiVersion: '2025-10-29.clover',
       });
     }
+  }
+
+  /**
+   * Update Stripe configuration dynamically
+   * Called by UnifiedPaymentService when settings change
+   */
+  updateConfiguration(secretKey: string): void {
+    if (secretKey && secretKey !== this.currentSecretKey) {
+      this.logger.log('Updating Stripe configuration with new credentials');
+      this.currentSecretKey = secretKey;
+      this.stripe = new Stripe(secretKey, {
+        apiVersion: '2025-10-29.clover',
+      });
+    }
+  }
+
+  /**
+   * Get current Stripe instance (for internal use)
+   */
+  getStripeInstance(): Stripe {
+    return this.stripe;
   }
 
   async createSubscription(

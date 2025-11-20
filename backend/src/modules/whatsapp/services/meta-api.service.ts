@@ -118,4 +118,73 @@ export class MetaApiService {
       );
     }
   }
+
+  async testConnection(accessToken: string, phoneNumberId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const info = await this.getPhoneNumberInfo(phoneNumberId, accessToken);
+      
+      return {
+        success: true,
+        message: `Connected successfully to ${info.display_phone_number || 'WhatsApp Business'}`,
+      };
+    } catch (error) {
+      // Extract detailed error information from Meta API response or HttpException
+      let errorMessage = 'Connection test failed';
+      
+      // Check if it's an HttpException (thrown by getPhoneNumberInfo)
+      if (error instanceof HttpException) {
+        const response = error.getResponse();
+        
+        // If response is an object, try to extract error details
+        if (typeof response === 'object' && response !== null) {
+          const errorData = response as any;
+          
+          // Check for Meta API error structure
+          if (errorData.error) {
+            const metaError = errorData.error;
+            errorMessage = metaError.message || metaError.error_user_msg || errorMessage;
+            
+            if (metaError.code) {
+              errorMessage = `[${metaError.code}] ${errorMessage}`;
+              
+              // Add helpful hints for common errors
+              if (metaError.code === 190) {
+                errorMessage += ' (Invalid access token - please check your token)';
+              } else if (metaError.code === 100) {
+                errorMessage += ' (Invalid phone number ID - please verify the ID)';
+              }
+            }
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } else if (typeof response === 'string') {
+          errorMessage = response;
+        }
+      }
+      // Check for Axios error structure (if error is not wrapped in HttpException)
+      else if (error.response?.data?.error) {
+        const metaError = error.response.data.error;
+        errorMessage = metaError.message || metaError.error_user_msg || errorMessage;
+        
+        if (metaError.code) {
+          errorMessage = `[${metaError.code}] ${errorMessage}`;
+          
+          if (metaError.code === 190) {
+            errorMessage += ' (Invalid access token - please check your token)';
+          } else if (metaError.code === 100) {
+            errorMessage += ' (Invalid phone number ID - please verify the ID)';
+          }
+        }
+      }
+      // Fallback to error message
+      else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  }
 }

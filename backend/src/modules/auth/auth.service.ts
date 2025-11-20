@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
@@ -8,6 +8,8 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { User, UserStatus } from '../users/entities/user.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
+import { SecuritySettingsService } from '../super-admin/services/security-settings.service';
+import { SessionService } from '../../common/services/session.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +19,8 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private dataSource: DataSource,
+    private securitySettingsService: SecuritySettingsService,
+    private sessionService: SessionService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{ user: Partial<User>; tokens: any; tenant: Tenant }> {
@@ -24,6 +28,12 @@ export class AuthService {
     const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
       throw new ConflictException('Email already exists');
+    }
+
+    // Validate password against security policy
+    const passwordValidation = await this.securitySettingsService.validatePassword(registerDto.password);
+    if (!passwordValidation.valid) {
+      throw new BadRequestException(passwordValidation.errors.join(', '));
     }
 
     // Use transaction for tenant + user creation (atomic operation)
@@ -64,9 +74,26 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<{ user: Partial<User>; tokens: any }> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     
+    // Check session limits
+    const securityConfig = await this.securitySettingsService.getSettings();
+    const userSessions = await this.sessionService.getUserSessions(user.id);
+    
+    if (userSessions.length >= securityConfig.sessionManagement.maxSessions) {
+      // Remove oldest session
+      await this.sessionService.deleteSession(userSessions[0]);
+    }
+
     const tokens = await this.generateTokens(user);
     await this.usersService.updateRefreshToken(user.id, tokens.refreshToken);
     await this.usersService.updateLastLogin(user.id);
+
+    // Create session
+    await this.sessionService.createSession(user.id, {
+      userId: user.id,
+      tenantId: user.tenantId,
+      role: user.role,
+      email: user.email,
+    });
 
     const { password, refreshToken, ...userWithoutSensitive } = user;
     return { user: userWithoutSensitive, tokens };
@@ -128,6 +155,10 @@ export class AuthService {
       tenantId: user.tenantId,
     };
 
+    // Get session timeout from security settings
+    const securityConfig = await this.securitySettingsService.getSettings();
+    const sessionTimeout = securityConfig.sessionManagement.sessionTimeout;
+
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_SECRET'),
@@ -135,7 +166,7 @@ export class AuthService {
       }),
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+        expiresIn: `${sessionTimeout}s`,
       }),
     ]);
 

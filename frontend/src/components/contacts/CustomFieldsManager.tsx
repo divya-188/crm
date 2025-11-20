@@ -7,7 +7,7 @@ import { CustomFieldDefinition, CustomFieldType } from '@/types/models.types';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import { CustomFieldModal } from './CustomFieldModal';
 import { fadeIn } from '@/lib/motion-variants';
 
@@ -30,10 +30,10 @@ export const CustomFieldsManager: React.FC = () => {
     mutationFn: (id: string) => contactsService.deleteCustomFieldDefinition(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customFieldDefinitions'] });
-      toast.success('Custom field deleted successfully');
+      Toast.success('Custom field deleted successfully');
     },
     onError: () => {
-      toast.error('Failed to delete custom field');
+      Toast.error('Failed to delete custom field');
     },
   });
 
@@ -43,10 +43,10 @@ export const CustomFieldsManager: React.FC = () => {
       contactsService.updateCustomFieldDefinition(id, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customFieldDefinitions'] });
-      toast.success('Custom field status updated');
+      Toast.success('Custom field status updated');
     },
     onError: () => {
-      toast.error('Failed to update custom field status');
+      Toast.error('Failed to update custom field status');
     },
   });
 
@@ -56,10 +56,10 @@ export const CustomFieldsManager: React.FC = () => {
       contactsService.reorderCustomFieldDefinition(id, sortOrder),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customFieldDefinitions'] });
-      toast.success('Custom field order updated');
+      Toast.success('Custom field order updated');
     },
     onError: () => {
-      toast.error('Failed to update custom field order');
+      Toast.error('Failed to update custom field order');
     },
   });
 

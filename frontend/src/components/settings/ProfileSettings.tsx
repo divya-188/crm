@@ -4,7 +4,7 @@ import Card from '../ui/Card';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
-import { toast } from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 import settingsService, { ProfileData } from '../../services/settings.service';
 import { User, Upload } from 'lucide-react';
 
@@ -39,10 +39,10 @@ export default function ProfileSettings() {
     mutationFn: settingsService.updateProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Profile updated successfully');
+      Toast.success('Profile updated successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      Toast.error(error.response?.data?.message || 'Failed to update profile');
     },
   });
 

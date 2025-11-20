@@ -1,11 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as bodyParser from 'body-parser';
+import { join } from 'path';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { ErrorLoggingInterceptor } from './common/interceptors/error-logging.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Configure raw body parsing for Stripe webhooks
   app.use(
@@ -18,6 +22,11 @@ async function bootstrap() {
     '/api/v1/subscriptions/webhooks/razorpay',
     bodyParser.raw({ type: 'application/json' }),
   );
+
+  // Serve static files from uploads directory
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   // Global prefix
   app.setGlobalPrefix('api/v1');
@@ -44,6 +53,12 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
   });
+
+  // Global exception filter
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Global error logging interceptor
+  app.useGlobalInterceptors(new ErrorLoggingInterceptor());
 
   // Global validation pipe
   app.useGlobalPipes(

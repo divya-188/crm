@@ -10,6 +10,9 @@ import {
 export class PayPalPaymentService implements IPaymentService {
   private readonly logger = new Logger(PayPalPaymentService.name);
   private client: paypal.core.PayPalHttpClient;
+  private currentClientId: string | null = null;
+  private currentClientSecret: string | null = null;
+  private currentMode: 'sandbox' | 'live' = 'sandbox';
 
   constructor() {
     const clientId = process.env.PAYPAL_CLIENT_ID;
@@ -20,12 +23,49 @@ export class PayPalPaymentService implements IPaymentService {
       this.logger.warn('PayPal credentials not configured');
     }
 
+    this.currentClientId = clientId;
+    this.currentClientSecret = clientSecret;
+    this.currentMode = mode === 'production' ? 'live' : 'sandbox';
+
     const environment =
       mode === 'production'
         ? new paypal.core.LiveEnvironment(clientId, clientSecret)
         : new paypal.core.SandboxEnvironment(clientId, clientSecret);
 
     this.client = new paypal.core.PayPalHttpClient(environment);
+  }
+
+  /**
+   * Update PayPal configuration dynamically
+   * Called by UnifiedPaymentService when settings change
+   */
+  updateConfiguration(clientId: string, clientSecret: string, mode: 'sandbox' | 'live'): void {
+    if (
+      clientId &&
+      clientSecret &&
+      (clientId !== this.currentClientId ||
+        clientSecret !== this.currentClientSecret ||
+        mode !== this.currentMode)
+    ) {
+      this.logger.log('Updating PayPal configuration with new credentials');
+      this.currentClientId = clientId;
+      this.currentClientSecret = clientSecret;
+      this.currentMode = mode;
+
+      const environment =
+        mode === 'live'
+          ? new paypal.core.LiveEnvironment(clientId, clientSecret)
+          : new paypal.core.SandboxEnvironment(clientId, clientSecret);
+
+      this.client = new paypal.core.PayPalHttpClient(environment);
+    }
+  }
+
+  /**
+   * Get current PayPal client (for internal use)
+   */
+  getPayPalClient(): paypal.core.PayPalHttpClient {
+    return this.client;
   }
 
   async createSubscription(

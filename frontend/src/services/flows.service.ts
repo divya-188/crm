@@ -38,7 +38,9 @@ class FlowsService {
    * Create a new flow
    */
   async createFlow(data: CreateFlowDto): Promise<Flow> {
+    console.log('FlowsService: Creating flow with data:', data);
     const response = await apiClient.post<Flow>('/flows', data);
+    console.log('FlowsService: Flow created successfully:', response.data);
     return response.data;
   }
 
@@ -46,7 +48,9 @@ class FlowsService {
    * Update a flow
    */
   async updateFlow(id: string, data: Partial<CreateFlowDto>): Promise<Flow> {
+    console.log('FlowsService: Updating flow', id, 'with data:', data);
     const response = await apiClient.patch<Flow>(`/flows/${id}`, data);
+    console.log('FlowsService: Flow updated successfully:', response.data);
     return response.data;
   }
 

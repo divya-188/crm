@@ -7,7 +7,7 @@ import Select from '@/components/ui/Select';
 import Spinner from '@/components/ui/Spinner';
 import { usersService, CreateUserDto, UpdateUserDto } from '@/services/users.service';
 import { User } from '@/types/models.types';
-import toast from 'react-hot-toast';
+import Toast from '@/lib/toast-system';
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -55,11 +55,11 @@ export const UserFormModal = ({ isOpen, onClose, user }: UserFormModalProps) => 
     mutationFn: (data: CreateUserDto) => usersService.createUser(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User created successfully');
+      Toast.success('User created successfully');
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create user');
+      Toast.error(error.response?.data?.message || 'Failed to create user');
     },
   });
 
@@ -67,11 +67,11 @@ export const UserFormModal = ({ isOpen, onClose, user }: UserFormModalProps) => 
     mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) => usersService.updateUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User updated successfully');
+      Toast.success('User updated successfully');
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update user');
+      Toast.error(error.response?.data?.message || 'Failed to update user');
     },
   });
 
@@ -91,7 +91,7 @@ export const UserFormModal = ({ isOpen, onClose, user }: UserFormModalProps) => 
     } else {
       // Create new user
       if (!formData.password) {
-        toast.error('Password is required for new users');
+        Toast.error('Password is required for new users');
         return;
       }
       const createData: CreateUserDto = {
