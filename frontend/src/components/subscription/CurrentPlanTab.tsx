@@ -70,7 +70,7 @@ export default function CurrentPlanTab({ subscription, usage, loading }: Current
         className="relative bg-gradient-to-br from-violet-50/50 via-white to-primary-50/30 rounded-2xl shadow-lg p-8 border border-violet-100/50 overflow-hidden group"
       >
         {/* Animated Background Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-100/20 via-transparent to-purple-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-100/20 via-transparent to-primary-100/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
         
         {/* Subtle Animated Orbs */}
         <motion.div

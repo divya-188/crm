@@ -108,7 +108,7 @@ export default function ComparePlansTab({
             scale: [1, 1.2, 1],
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-violet-200/40 to-purple-200/40 rounded-full blur-3xl"
+          className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-primary-200/40 to-primary-200/40 rounded-full blur-3xl"
         />
         <motion.div
           animate={{
@@ -117,7 +117,7 @@ export default function ComparePlansTab({
             scale: [1, 1.3, 1],
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-r from-purple-200/40 to-pink-200/40 rounded-full blur-3xl"
+          className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-r from-primary-200/40 to-primary-300/40 rounded-full blur-3xl"
         />
       </div>
 
