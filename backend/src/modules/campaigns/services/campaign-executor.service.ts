@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Campaign, CampaignStatus } from '../entities/campaign.entity';
 import { Contact } from '../../contacts/entities/contact.entity';
 import { Template } from '../../templates/entities/template.entity';
+import { WhatsAppConfig } from '../../tenants/entities/whatsapp-config.entity';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
@@ -18,6 +19,8 @@ export class CampaignExecutorService {
     private contactsRepository: Repository<Contact>,
     @InjectRepository(Template)
     private templatesRepository: Repository<Template>,
+    @InjectRepository(WhatsAppConfig)
+    private whatsappConfigRepository: Repository<WhatsAppConfig>,
     private configService: ConfigService,
   ) {}
 
@@ -90,11 +93,40 @@ export class CampaignExecutorService {
    * Send a single WhatsApp message
    */
   private async sendMessage(campaign: Campaign, contact: Contact): Promise<void> {
-    const accessToken = this.configService.get('WHATSAPP_ACCESS_TOKEN');
-    const phoneNumberId = this.configService.get('WHATSAPP_PHONE_NUMBER_ID');
+    // Try to get WhatsApp config from database first (tenant-specific)
+    let accessToken: string;
+    let phoneNumberId: string;
+    let configSource: string;
+
+    const whatsappConfig = await this.whatsappConfigRepository.findOne({
+      where: { 
+        tenantId: campaign.tenantId,
+        isActive: true,
+      },
+    });
+
+    if (whatsappConfig) {
+      accessToken = whatsappConfig.accessToken;
+      phoneNumberId = whatsappConfig.phoneNumberId;
+      configSource = 'database (tenant-specific)';
+      this.logger.debug(`Using WhatsApp config from database for tenant ${campaign.tenantId}`);
+    } else {
+      // Fallback to environment variables
+      accessToken = this.configService.get('WHATSAPP_ACCESS_TOKEN');
+      phoneNumberId = this.configService.get('WHATSAPP_PHONE_NUMBER_ID');
+      configSource = 'environment variables';
+      this.logger.debug(`Using WhatsApp config from environment variables`);
+    }
+
+    // Enhanced logging for debugging
+    this.logger.debug(`WhatsApp Config Check:`);
+    this.logger.debug(`- Config Source: ${configSource}`);
+    this.logger.debug(`- Tenant ID: ${campaign.tenantId}`);
+    this.logger.debug(`- Access Token: ${accessToken ? `${accessToken.substring(0, 20)}...` : 'MISSING'}`);
+    this.logger.debug(`- Phone Number ID: ${phoneNumberId || 'MISSING'}`);
 
     if (!accessToken || !phoneNumberId) {
-      throw new Error('WhatsApp configuration missing');
+      throw new Error(`WhatsApp configuration missing: accessToken or phoneNumberId not found (checked ${configSource})`);
     }
 
     // Prepare template parameters
@@ -116,14 +148,36 @@ export class CampaignExecutorService {
       },
     };
 
-    const response = await axios.post(url, payload, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    this.logger.debug(`Sending message to ${contact.phone}`);
+    this.logger.debug(`Template: ${campaign.template.metaTemplateName || campaign.template.name}`);
+    this.logger.debug(`Language: ${campaign.template.language}`);
+    this.logger.debug(`URL: ${url}`);
+    this.logger.debug(`Payload: ${JSON.stringify(payload, null, 2)}`);
 
-    this.logger.debug(`Message sent to ${contact.phone}. Message ID: ${response.data.messages[0].id}`);
+    try {
+      const response = await axios.post(url, payload, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      this.logger.log(`✅ Message sent to ${contact.phone}. Message ID: ${response.data.messages[0].id}`);
+    } catch (error) {
+      // Enhanced error logging
+      if (error.response) {
+        this.logger.error(`❌ Meta API Error for ${contact.phone}:`);
+        this.logger.error(`Status: ${error.response.status}`);
+        this.logger.error(`Response: ${JSON.stringify(error.response.data, null, 2)}`);
+        this.logger.error(`Headers: ${JSON.stringify(error.response.headers, null, 2)}`);
+      } else if (error.request) {
+        this.logger.error(`❌ No response received for ${contact.phone}`);
+        this.logger.error(`Request: ${JSON.stringify(error.request, null, 2)}`);
+      } else {
+        this.logger.error(`❌ Error setting up request for ${contact.phone}: ${error.message}`);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -135,23 +189,7 @@ export class CampaignExecutorService {
     // Get template components
     const templateComponents = campaign.template.components;
 
-    // Handle HEADER component
-    if (templateComponents?.header?.placeholders?.length > 0) {
-      const headerParams = templateComponents.header.placeholders.map((placeholder) => {
-        const value = this.getVariableValue(campaign, contact, placeholder.index);
-        return {
-          type: 'text',
-          text: value,
-        };
-      });
-
-      components.push({
-        type: 'header',
-        parameters: headerParams,
-      });
-    }
-
-    // Handle BODY component
+    // Handle BODY component (only body has placeholders in our template structure)
     if (templateComponents?.body?.placeholders?.length > 0) {
       const bodyParams = templateComponents.body.placeholders.map((placeholder) => {
         const value = this.getVariableValue(campaign, contact, placeholder.index);

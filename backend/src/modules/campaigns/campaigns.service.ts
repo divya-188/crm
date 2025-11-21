@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Campaign, CampaignStatus } from './entities/campaign.entity';
+import { Campaign, CampaignStatus, CampaignStatusType } from './entities/campaign.entity';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { Contact } from '../contacts/entities/contact.entity';
 import { Template, TemplateStatus } from '../templates/entities/template.entity';
@@ -133,8 +133,29 @@ export class CampaignsService {
   async start(tenantId: string, id: string): Promise<Campaign> {
     const campaign = await this.findOne(tenantId, id);
 
-    if (campaign.status !== CampaignStatus.DRAFT && campaign.status !== CampaignStatus.SCHEDULED) {
-      throw new BadRequestException('Campaign cannot be started');
+    // Allow starting DRAFT, SCHEDULED, PAUSED, COMPLETED, or FAILED campaigns
+    const allowedStatuses: CampaignStatusType[] = [
+      CampaignStatus.DRAFT,
+      CampaignStatus.SCHEDULED,
+      CampaignStatus.PAUSED,
+      CampaignStatus.COMPLETED,
+      CampaignStatus.FAILED,
+    ];
+
+    if (!allowedStatuses.includes(campaign.status)) {
+      throw new BadRequestException(
+        `Campaign cannot be started. Current status: ${campaign.status}. Only campaigns with status DRAFT, SCHEDULED, COMPLETED, or FAILED can be started.`,
+      );
+    }
+
+    // Reset counters if restarting a completed/failed campaign
+    if (campaign.status === CampaignStatus.COMPLETED || campaign.status === CampaignStatus.FAILED) {
+      campaign.sentCount = 0;
+      campaign.deliveredCount = 0;
+      campaign.readCount = 0;
+      campaign.failedCount = 0;
+      campaign.errorMessage = null;
+      campaign.completedAt = null;
     }
 
     campaign.status = CampaignStatus.RUNNING;
@@ -170,6 +191,29 @@ export class CampaignsService {
     }
 
     campaign.status = CampaignStatus.RUNNING;
+
+    const savedCampaign = await this.campaignsRepository.save(campaign);
+
+    // Execute campaign asynchronously (continue from where it was paused)
+    this.campaignExecutorService.executeCampaign(id).catch((error) => {
+      console.error(`Failed to resume campaign ${id}:`, error);
+    });
+
+    return savedCampaign;
+  }
+
+  async reset(tenantId: string, id: string): Promise<Campaign> {
+    const campaign = await this.findOne(tenantId, id);
+
+    // Reset campaign to draft status
+    campaign.status = CampaignStatus.DRAFT;
+    campaign.startedAt = null;
+    campaign.completedAt = null;
+    campaign.sentCount = 0;
+    campaign.deliveredCount = 0;
+    campaign.readCount = 0;
+    campaign.failedCount = 0;
+    campaign.errorMessage = null;
 
     return this.campaignsRepository.save(campaign);
   }

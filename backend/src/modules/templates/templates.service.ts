@@ -27,6 +27,9 @@ export class TemplatesService {
     private metaTemplateApiService: MetaTemplateApiService,
   ) {}
 
+  // Lazy inject TemplateSyncService to avoid circular dependency
+  private templateSyncService: any;
+
   /**
    * Create a new template with validation and quality scoring
    * Requirement 1.1: Template Component Structure and Validation
@@ -1705,12 +1708,13 @@ export class TemplatesService {
   /**
    * Fetch templates from Meta and sync with local database
    */
-  async syncTemplatesFromMeta(tenantId: string): Promise<{ synced: number; errors: string[] }> {
+  async syncTemplatesFromMeta(tenantId: string): Promise<{ synced: number; created: number; errors: string[] }> {
     this.logger.log(`🔄 Syncing templates from Meta for tenant: ${tenantId}`);
 
     try {
       const metaTemplates = await this.metaTemplateApiService.fetchAllTemplatesFromMeta(tenantId);
       let synced = 0;
+      let created = 0;
       const errors: string[] = [];
 
       for (const metaTemplate of metaTemplates) {
@@ -1727,10 +1731,14 @@ export class TemplatesService {
                 metaTemplate.rejection_reason,
               );
               synced++;
-              this.logger.log(`✅ Synced template: ${metaTemplate.name} - Status: ${metaTemplate.status}`);
+              this.logger.log(`✅ Updated template: ${metaTemplate.name} - Status: ${metaTemplate.status}`);
             }
           } else {
-            this.logger.warn(`⚠️ Meta template ${metaTemplate.name} (${metaTemplate.id}) not found locally`);
+            // Create new template from Meta data
+            this.logger.log(`📥 Creating new template from Meta: ${metaTemplate.name}`);
+            const newTemplate = await this.createTemplateFromMeta(tenantId, metaTemplate);
+            created++;
+            this.logger.log(`✅ Created template: ${newTemplate.name} (${newTemplate.id})`);
           }
         } catch (error) {
           const errorMsg = `Failed to sync template ${metaTemplate.name}: ${error.message}`;
@@ -1739,11 +1747,110 @@ export class TemplatesService {
         }
       }
 
-      this.logger.log(`✅ Sync completed: ${synced} templates synced, ${errors.length} errors`);
-      return { synced, errors };
+      this.logger.log(`✅ Sync completed: ${synced} updated, ${created} created, ${errors.length} errors`);
+      return { synced, created, errors };
     } catch (error) {
       this.logger.error(`Failed to sync templates from Meta: ${error.message}`);
       throw error;
     }
   }
+
+  /**
+   * Create a new template from Meta template data
+   */
+  private async createTemplateFromMeta(tenantId: string, metaTemplate: any): Promise<Template> {
+    const components: any = {};
+
+    // Parse components from Meta format
+    if (metaTemplate.components) {
+      for (const component of metaTemplate.components) {
+        if (component.type === 'HEADER') {
+          components.header = {
+            type: component.format || 'TEXT',
+            text: component.text || '',
+          };
+        } else if (component.type === 'BODY') {
+          const placeholders = [];
+          const text = component.text || '';
+
+          // Extract placeholders from text
+          const matches = text.match(/\{\{(\d+)\}\}/g);
+          if (matches) {
+            matches.forEach((match, index) => {
+              const placeholderIndex = parseInt(match.replace(/\{\{|\}\}/g, ''));
+              placeholders.push({
+                index: placeholderIndex,
+                example: component.example?.body_text?.[0]?.[index] || `Value ${placeholderIndex}`,
+              });
+            });
+          }
+
+          components.body = {
+            text,
+            placeholders,
+          };
+        } else if (component.type === 'FOOTER') {
+          components.footer = {
+            text: component.text || '',
+          };
+        } else if (component.type === 'BUTTONS') {
+          components.buttons = component.buttons?.map((btn: any) => ({
+            type: btn.type,
+            text: btn.text,
+            url: btn.url,
+            phoneNumber: btn.phone_number,
+          }));
+        }
+      }
+    }
+
+    // Extract sample values
+    const sampleValues: Record<string, string> = {};
+    const bodyComponent = metaTemplate.components?.find((c: any) => c.type === 'BODY');
+    if (bodyComponent?.example?.body_text) {
+      bodyComponent.example.body_text[0]?.forEach((value: string, index: number) => {
+        sampleValues[(index + 1).toString()] = value;
+      });
+    }
+
+    // Map category
+    const categoryMap: Record<string, string> = {
+      UTILITY: 'utility',
+      MARKETING: 'marketing',
+      AUTHENTICATION: 'authentication',
+      TRANSACTIONAL: 'utility',
+      ACCOUNT_UPDATE: 'utility',
+      OTP: 'authentication',
+    };
+
+    // Map status
+    const statusMap: Record<string, string> = {
+      APPROVED: 'approved',
+      PENDING: 'pending',
+      REJECTED: 'rejected',
+      DELETED: 'draft',
+    };
+
+    // Create template
+    const template = this.templatesRepository.create({
+      tenantId,
+      name: metaTemplate.name,
+      displayName: metaTemplate.name,
+      category: categoryMap[metaTemplate.category] || 'utility',
+      language: metaTemplate.language,
+      description: `Synced from Meta: ${metaTemplate.name}`,
+      components,
+      sampleValues,
+      metaTemplateId: metaTemplate.id,
+      metaTemplateName: metaTemplate.name,
+      status: statusMap[metaTemplate.status] || 'draft',
+      isActive: true,
+      approvedAt: metaTemplate.status === 'APPROVED' ? new Date() : null,
+      rejectedAt: metaTemplate.status === 'REJECTED' ? new Date() : null,
+      rejectionReason: metaTemplate.rejection_reason || null,
+    });
+
+    return await this.templatesRepository.save(template);
+  }
+
 }

@@ -2340,4 +2340,15 @@ export class TemplatesController {
 
     return this.metaTemplateApiService.getTemplateStatus(tenantId, template.metaTemplateId);
   }
+
+  @Post('sync')
+  @TemplatePermissions(TemplatePermission.READ)
+  @ApiOperation({ 
+    summary: 'Sync templates from Meta API',
+    description: 'Fetches all templates from Meta WhatsApp Business API and syncs them with the database. Updates template statuses.',
+  })
+  @ApiResponse({ status: 200, description: 'Templates synced successfully' })
+  async syncTemplatesFromMetaAPI(@TenantId() tenantId: string) {
+    return this.templatesService.syncTemplatesFromMeta(tenantId);
+  }
 }

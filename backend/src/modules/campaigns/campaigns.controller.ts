@@ -107,6 +107,13 @@ export class CampaignsController {
     return this.campaignsService.resume(tenantId, id);
   }
 
+  @Post(':id/reset')
+  @ApiOperation({ summary: 'Reset campaign to draft status' })
+  @ApiResponse({ status: 200, description: 'Campaign reset' })
+  reset(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.campaignsService.reset(tenantId, id);
+  }
+
   @Get(':id/recipients')
   @ApiOperation({ summary: 'Get campaign recipients' })
   @ApiResponse({ status: 200, description: 'Recipients retrieved' })

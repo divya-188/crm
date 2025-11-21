@@ -32,6 +32,7 @@ import { TemplatePermissionsGuard } from './guards/template-permissions.guard';
 import { TemplateVisibilityGuard } from './guards/template-visibility.guard';
 import { TemplateCursorPaginationService } from './services/template-cursor-pagination.service';
 import { TemplateQueryOptimizerService } from './services/template-query-optimizer.service';
+import { TemplateSyncService } from './services/template-sync.service';
 import { CommonModule } from '../../common/common.module';
 
 @Module({
@@ -78,6 +79,7 @@ import { CommonModule } from '../../common/common.module';
     TemplateVisibilityGuard,
     TemplateCursorPaginationService,
     TemplateQueryOptimizerService,
+    TemplateSyncService,
   ],
   exports: [
     TemplatesService,
