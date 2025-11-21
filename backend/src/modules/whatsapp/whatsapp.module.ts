@@ -6,8 +6,6 @@ import { Conversation } from '../conversations/entities/conversation.entity';
 import { Message } from '../conversations/entities/message.entity';
 import { WhatsAppService } from './whatsapp.service';
 import { WhatsAppController } from './whatsapp.controller';
-import { WhatsAppWebhookController } from './whatsapp-webhook.controller';
-import { WhatsAppWebhookService } from './whatsapp-webhook.service';
 import { MetaApiService } from './services/meta-api.service';
 import { WebSocketModule } from '../websocket/websocket.module';
 import { FlowsModule } from '../flows/flows.module';
@@ -22,8 +20,8 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
     forwardRef(() => AutomationsModule),
     SubscriptionsModule,
   ],
-  controllers: [WhatsAppController, WhatsAppWebhookController],
-  providers: [WhatsAppService, WhatsAppWebhookService, MetaApiService],
+  controllers: [WhatsAppController],
+  providers: [WhatsAppService, MetaApiService],
   exports: [WhatsAppService, MetaApiService],
 })
 export class WhatsAppModule {}

@@ -72,6 +72,15 @@ export class Conversation {
   @Column({ type: 'timestamp', nullable: true })
   lastMessageAt: Date;
 
+  @Column({ type: 'timestamp', nullable: true })
+  lastInboundMessageAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  windowExpiresAt: Date;
+
+  @Column({ default: false })
+  isWindowOpen: boolean;
+
   @OneToMany(() => Message, message => message.conversation)
   messages: Message[];
 

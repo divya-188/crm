@@ -34,7 +34,7 @@ import { SuperAdminModule } from './modules/super-admin/super-admin.module';
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000,    // Time window in milliseconds (60 seconds)
-      limit: 100,    // Max requests per window
+      limit: 1000,   // Max requests per window (increased for development)
     }]),
     ScheduleModule.forRoot(),
     CommonModule,

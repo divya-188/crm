@@ -3,55 +3,42 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
 } from 'typeorm';
-import { Tenant } from '../../tenants/entities/tenant.entity';
-import { Webhook } from './webhook.entity';
+
+export enum WebhookEventType {
+  MESSAGE_STATUS = 'message_status',
+  INCOMING_MESSAGE = 'incoming_message',
+  TEMPLATE_STATUS = 'template_status',
+  ACCOUNT_UPDATE = 'account_update',
+  TEMPLATE_QUALITY = 'template_quality',
+}
 
 @Entity('webhook_logs')
 export class WebhookLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'tenant_id' })
-  tenantId: string;
-
-  @ManyToOne(() => Tenant, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'tenant_id' })
-  tenant: Tenant;
-
-  @Column({ name: 'webhook_id' })
-  webhookId: string;
-
-  @ManyToOne(() => Webhook, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'webhook_id' })
-  webhook: Webhook;
-
-  @Column({ name: 'event_type' })
-  eventType: string;
+  @Column({
+    type: 'enum',
+    enum: WebhookEventType,
+  })
+  eventType: WebhookEventType;
 
   @Column({ type: 'jsonb' })
-  payload: Record<string, any>;
+  payload: any;
 
-  @Column({ name: 'response_status', nullable: true })
-  responseStatus: number;
+  @Column({ nullable: true })
+  signature: string;
 
-  @Column({ name: 'response_body', type: 'text', nullable: true })
-  responseBody: string;
+  @Column({ default: false })
+  processed: boolean;
 
-  @Column({ name: 'response_time_ms', nullable: true })
-  responseTimeMs: number;
-
-  @Column({ name: 'error_message', type: 'text', nullable: true })
+  @Column({ nullable: true })
   errorMessage: string;
 
-  @Column({ name: 'attempt_count', default: 1 })
-  attemptCount: number;
+  @Column({ type: 'timestamp', nullable: true })
+  processedAt: Date;
 
-  @Column({ name: 'is_success', default: false })
-  isSuccess: boolean;
-
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 }

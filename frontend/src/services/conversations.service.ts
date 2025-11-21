@@ -79,9 +79,10 @@ class ConversationsService {
    * Send a message in a conversation
    */
   async sendMessage(data: SendMessageDto): Promise<Message> {
+    const { conversationId, ...messageData } = data;
     const response = await apiClient.post<Message>(
-      `/conversations/${data.conversationId}/messages`,
-      data
+      `/conversations/${conversationId}/messages`,
+      messageData
     );
     return response.data;
   }
@@ -98,6 +99,18 @@ class ConversationsService {
    */
   async markAsRead(conversationId: string): Promise<void> {
     await apiClient.post(`/conversations/${conversationId}/read`);
+  }
+
+  /**
+   * Get 24-hour window status for a conversation
+   */
+  async getWindowStatus(conversationId: string): Promise<{
+    isOpen: boolean;
+    expiresAt: Date | null;
+    hoursRemaining: number | null;
+  }> {
+    const response = await apiClient.get(`/conversations/${conversationId}/window-status`);
+    return response.data;
   }
 }
 

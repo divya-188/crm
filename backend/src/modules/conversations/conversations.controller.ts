@@ -118,4 +118,11 @@ export class ConversationsController {
   markAsRead(@TenantId() tenantId: string, @Param('id') conversationId: string) {
     return this.conversationsService.markAsRead(tenantId, conversationId);
   }
+
+  @Get(':id/window-status')
+  @ApiOperation({ summary: 'Get 24-hour messaging window status' })
+  @ApiResponse({ status: 200, description: 'Window status retrieved' })
+  getWindowStatus(@TenantId() tenantId: string, @Param('id') conversationId: string) {
+    return this.conversationsService.getWindowStatus(tenantId, conversationId);
+  }
 }

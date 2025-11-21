@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { FlowsController } from './flows.controller';
@@ -17,7 +17,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
   imports: [
     TypeOrmModule.forFeature([Flow, FlowExecution]),
     HttpModule,
-    ConversationsModule,
+    forwardRef(() => ConversationsModule),
     ContactsModule,
     SubscriptionsModule,
   ],

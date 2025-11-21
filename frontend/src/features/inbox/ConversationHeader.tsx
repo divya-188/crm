@@ -39,10 +39,10 @@ export const ConversationHeader: React.FC<ConversationHeaderProps> = ({ conversa
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="relative">
-          {contact?.avatarUrl ? (
+          {contact?.avatar || contact?.avatarUrl ? (
             <img
-              src={contact.avatarUrl}
-              alt={contact.name || contact.phoneNumber}
+              src={contact.avatar || contact.avatarUrl}
+              alt={contact.firstName || contact.phone || 'Contact'}
               className="w-12 h-12 rounded-full object-cover"
             />
           ) : (
@@ -57,11 +57,11 @@ export const ConversationHeader: React.FC<ConversationHeaderProps> = ({ conversa
         {/* Contact Details */}
         <div>
           <h2 className="text-lg font-semibold text-neutral-900">
-            {contact?.name || 'Unknown Contact'}
+            {contact?.firstName || contact?.phone || 'Unknown Contact'}
           </h2>
           <div className="flex items-center gap-2 text-sm text-neutral-600">
             <Icons.phone className="w-3.5 h-3.5" />
-            <span>{contact?.phoneNumber || 'No phone number'}</span>
+            <span>{contact?.phone || 'No phone number'}</span>
           </div>
         </div>
       </div>

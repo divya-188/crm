@@ -94,6 +94,31 @@ export class MetaTemplateApiService {
   }
 
   /**
+   * Get WhatsApp configuration for tenant (public method for webhook controller)
+   */
+  async getWhatsAppConfig(tenantId: string): Promise<WhatsAppConfig> {
+    return this.getActiveConnection(tenantId);
+  }
+
+  /**
+   * Get WhatsApp config by phone number ID (for webhook tenant lookup)
+   */
+  async getConfigByPhoneNumberId(phoneNumberId: string): Promise<WhatsAppConfig | null> {
+    try {
+      const config = await this.whatsappConfigRepository.findOne({
+        where: { 
+          phoneNumberId,
+          isActive: true 
+        },
+      });
+      return config;
+    } catch (error) {
+      this.logger.error(`Failed to get config by phone number ID: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
    * Submit template to Meta for approval
    * @param tenantId Tenant ID
    * @param template Template to submit

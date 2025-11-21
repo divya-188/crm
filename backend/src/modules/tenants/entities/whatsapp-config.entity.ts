@@ -37,6 +37,9 @@ export class WhatsAppConfig {
   @Column({ name: 'webhook_url', type: 'text' })
   webhookUrl: string;
 
+  @Column({ name: 'webhook_verify_token', default: 'divya_whatsapp_verify_2025' })
+  webhookVerifyToken: string;
+
   @Column({ 
     type: 'enum', 
     enum: ['connected', 'disconnected', 'pending'],

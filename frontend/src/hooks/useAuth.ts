@@ -7,25 +7,43 @@ export const useAuth = () => {
   const { user, isAuthenticated, isLoading, setAuth, clearAuth, setLoading, hasRole } =
     useAuthStore();
 
-  // Verify authentication on mount
+  // Verify authentication on mount (only once per session)
   useEffect(() => {
     const verifyAuth = async () => {
-      if (isAuthenticated && user) {
-        try {
-          setLoading(true);
-          const profile = await authService.getProfile();
-          setAuth(profile, useAuthStore.getState().accessToken!, useAuthStore.getState().refreshToken!);
-        } catch (error) {
-          console.error('Failed to verify authentication:', getErrorMessage(error));
-          clearAuth();
-        } finally {
-          setLoading(false);
+      // Skip if already verified or not authenticated
+      if (!isAuthenticated || !user || isLoading) {
+        return;
+      }
+
+      // Only verify once per session
+      const hasVerified = sessionStorage.getItem('auth_verified');
+      if (hasVerified) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const profile = await authService.getProfile();
+        setAuth(profile, useAuthStore.getState().accessToken!, useAuthStore.getState().refreshToken!);
+        sessionStorage.setItem('auth_verified', 'true');
+      } catch (error: any) {
+        // Don't clear auth on rate limit errors
+        if (error?.response?.status === 429) {
+          console.warn('Rate limited - skipping auth verification');
+          sessionStorage.setItem('auth_verified', 'true'); // Mark as verified to prevent retry
+          return;
         }
+        console.error('Failed to verify authentication:', getErrorMessage(error));
+        clearAuth();
+        sessionStorage.removeItem('auth_verified');
+      } finally {
+        setLoading(false);
       }
     };
 
     verifyAuth();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   const login = async (email: string, password: string) => {
     setLoading(true);

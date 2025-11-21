@@ -185,7 +185,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showAvata
             isOutbound ? 'text-white/70' : 'text-neutral-500'
           )}
         >
-          <span>{formatMessageTime(message.sentAt)}</span>
+          <span>{formatMessageTime(message.sentAt || message.createdAt)}</span>
           {renderStatusIndicator()}
         </div>
       </motion.div>

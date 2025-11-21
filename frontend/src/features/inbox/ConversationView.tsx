@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ConversationHeader } from './ConversationHeader';
+import { WindowStatusBanner } from './WindowStatusBanner';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { Conversation } from '@/types/models.types';
@@ -53,6 +54,9 @@ export const ConversationView: React.FC<ConversationViewProps> = ({ conversation
     >
       {/* Header */}
       <ConversationHeader conversation={conversation} />
+
+      {/* 24-Hour Window Status Banner */}
+      <WindowStatusBanner conversationId={conversation.id} />
 
       {/* Messages */}
       <MessageList messages={messages} conversationId={conversation.id} />

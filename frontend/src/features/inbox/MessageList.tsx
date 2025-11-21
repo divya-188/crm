@@ -58,7 +58,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, conversation
     let currentDate = '';
 
     messages.forEach((message) => {
-      const messageDate = formatMessageDate(message.sentAt);
+      const messageDate = formatMessageDate(message.sentAt || message.createdAt);
 
       if (messageDate !== currentDate) {
         currentDate = messageDate;

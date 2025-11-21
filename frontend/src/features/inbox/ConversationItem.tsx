@@ -10,7 +10,10 @@ interface ConversationItemProps {
 }
 
 export const ConversationItem = ({ conversation, isSelected }: ConversationItemProps) => {
-  const { contact, lastMessage, unreadCount, status, assignedAgent, tags } = conversation;
+  const { contact, lastMessage, unreadCount, status, assignedAgent, assignedTo, tags, lastMessageAt } = conversation;
+
+  // Use assignedTo if assignedAgent is not available
+  const agent = assignedAgent || assignedTo;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -46,8 +49,13 @@ export const ConversationItem = ({ conversation, isSelected }: ConversationItemP
 
   const formatLastMessageTime = (dateString?: string) => {
     if (!dateString) return '';
+    
     try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return '';
+      
+      return formatDistanceToNow(date, { addSuffix: true });
     } catch {
       return '';
     }
@@ -84,10 +92,10 @@ export const ConversationItem = ({ conversation, isSelected }: ConversationItemP
       <div className="flex gap-3">
         {/* Avatar */}
         <div className="flex-shrink-0">
-          {contact?.avatarUrl ? (
+          {contact?.avatar || contact?.avatarUrl ? (
             <img
-              src={contact.avatarUrl}
-              alt={contact.name || contact.phoneNumber}
+              src={contact.avatar || contact.avatarUrl}
+              alt={contact.firstName || contact.phone || 'Contact'}
               className="w-12 h-12 rounded-full object-cover"
             />
           ) : (
@@ -103,16 +111,16 @@ export const ConversationItem = ({ conversation, isSelected }: ConversationItemP
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-neutral-900 truncate">
-                {contact?.name || contact?.phoneNumber || 'Unknown'}
+                {contact?.firstName || contact?.phone || 'Unknown Contact'}
               </h3>
-              {contact?.name && (
-                <p className="text-xs text-neutral-500 truncate">{contact.phoneNumber}</p>
+              {contact?.phone && (
+                <p className="text-xs text-neutral-500 truncate">{contact.phone}</p>
               )}
             </div>
             <div className="flex-shrink-0 flex flex-col items-end gap-1">
-              {lastMessage && (
+              {lastMessageAt && (
                 <span className="text-xs text-neutral-500">
-                  {formatLastMessageTime(lastMessage.sentAt)}
+                  {formatLastMessageTime(lastMessageAt)}
                 </span>
               )}
               {unreadCount > 0 && (
@@ -142,23 +150,23 @@ export const ConversationItem = ({ conversation, isSelected }: ConversationItemP
               {status}
             </Badge>
 
-            {tags.slice(0, 2).map((tag) => (
+            {tags && Array.isArray(tags) && tags.slice(0, 2).map((tag) => (
               <Badge key={tag} variant="neutral" size="sm">
                 {tag}
               </Badge>
             ))}
 
-            {tags.length > 2 && (
+            {tags && Array.isArray(tags) && tags.length > 2 && (
               <Badge variant="neutral" size="sm">
                 +{tags.length - 2}
               </Badge>
             )}
 
-            {assignedAgent && (
+            {agent && (
               <div className="flex items-center gap-1 text-xs text-neutral-500">
                 <User className="w-3 h-3" />
                 <span className="truncate max-w-[100px]">
-                  {assignedAgent.firstName} {assignedAgent.lastName}
+                  {agent.firstName} {agent.lastName}
                 </span>
               </div>
             )}

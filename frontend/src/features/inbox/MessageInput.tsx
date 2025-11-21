@@ -7,10 +7,14 @@ import {
   Loader2,
   Zap,
   FileText,
+  Lock,
+  ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSendMessage } from '@/hooks/useConversations';
 import { useSocket } from '@/hooks/useSocket';
+import { useWindowStatus } from '@/hooks/useWindowStatus';
+import { useAuth } from '@/hooks/useAuth';
 import { MessageType } from '@/types/models.types';
 import Toast from '@/lib/toast-system';
 import { mediaService } from '@/services';
@@ -45,6 +49,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
 
   const { mutate: sendMessage, isPending: isSending } = useSendMessage();
   const { socket } = useSocket();
+  const { data: windowStatus } = useWindowStatus(conversationId);
+  const { hasRole } = useAuth();
+
+  const isWindowClosed = windowStatus && !windowStatus.isOpen;
+  const isAdmin = hasRole('admin') || hasRole('super_admin');
 
   // Auto-resize textarea
   useEffect(() => {
@@ -84,8 +93,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
 
     // Prepare message data
     const messageData: any = {
-      conversationId,
       type: uploadedFile ? uploadedFile.type : 'text',
+      direction: 'outbound',
       content: message.trim() || undefined,
     };
 
@@ -109,7 +118,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
     }
 
     // Send message with optimistic update
-    sendMessage(messageData, {
+    sendMessage({ ...messageData, conversationId }, {
       onSuccess: () => {
         setMessage('');
         setUploadedFile(null);
@@ -181,14 +190,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
 
   const handleTemplateSend = async (templateId: string, variableValues: Record<string, string>) => {
     const messageData: any = {
-      conversationId,
       type: 'template',
+      direction: 'outbound',
       templateId,
       variableValues,
     };
 
     return new Promise<void>((resolve, reject) => {
-      sendMessage(messageData, {
+      sendMessage({ ...messageData, conversationId }, {
         onSuccess: () => {
           Toast.success('Template message sent successfully');
           resolve();
@@ -201,10 +210,54 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
     });
   };
 
-  const canSend = (message.trim() || uploadedFile) && !isSending && !isUploading;
+  const canSend = (message.trim() || uploadedFile) && !isSending && !isUploading && !isWindowClosed;
 
   return (
     <div className="border-t border-neutral-200 bg-white">
+      {/* Window Closed - Role-Based Message */}
+      {isWindowClosed && (
+        <div className="px-4 pt-4 pb-2">
+          {isAdmin ? (
+            // Admin: Can send templates
+            <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <Lock className="text-amber-600 flex-shrink-0" size={20} />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900">
+                  Free-form messaging disabled
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Use template messages only until customer replies
+                </p>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowTemplateComposer(true)}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+              >
+                Send Template
+              </motion.button>
+            </div>
+          ) : (
+            // Agent: Cannot send anything
+            <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <ShieldAlert className="text-red-600 flex-shrink-0" size={20} />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-900">
+                  ⛔ Messaging Window Expired
+                </p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  You cannot send messages. Only admins can send template messages.
+                </p>
+                <p className="text-xs text-red-600 mt-1 font-medium">
+                  💡 Contact your administrator or wait for the customer to reply.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* File Preview */}
       <AnimatePresence>
         {uploadedFile && (
@@ -232,16 +285,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
             {/* Media Upload */}
             <div className="relative">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowMediaUpload(!showMediaUpload)}
+                whileHover={{ scale: isWindowClosed ? 1 : 1.05 }}
+                whileTap={{ scale: isWindowClosed ? 1 : 0.95 }}
+                onClick={() => !isWindowClosed && setShowMediaUpload(!showMediaUpload)}
+                disabled={isWindowClosed}
                 className={cn(
                   'p-2 rounded-lg transition-colors',
-                  showMediaUpload
+                  isWindowClosed
+                    ? 'text-neutral-300 cursor-not-allowed'
+                    : showMediaUpload
                     ? 'bg-primary-100 text-primary-600'
                     : 'text-neutral-500 hover:bg-neutral-100'
                 )}
-                title="Attach media"
+                title={isWindowClosed ? 'Disabled - Window closed' : 'Attach media'}
               >
                 <Paperclip size={20} />
               </motion.button>
@@ -259,22 +315,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
             {/* Saved Responses */}
             <div className="relative">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowSavedResponses(!showSavedResponses)}
+                whileHover={{ scale: isWindowClosed ? 1 : 1.05 }}
+                whileTap={{ scale: isWindowClosed ? 1 : 0.95 }}
+                onClick={() => !isWindowClosed && setShowSavedResponses(!showSavedResponses)}
+                disabled={isWindowClosed}
                 className={cn(
                   'p-2 rounded-lg transition-colors',
-                  showSavedResponses
+                  isWindowClosed
+                    ? 'text-neutral-300 cursor-not-allowed'
+                    : showSavedResponses
                     ? 'bg-primary-100 text-primary-600'
                     : 'text-neutral-500 hover:bg-neutral-100'
                 )}
-                title="Saved responses"
+                title={isWindowClosed ? 'Disabled - Window closed' : 'Saved responses'}
               >
                 <Zap size={20} />
               </motion.button>
 
               <AnimatePresence>
-                {showSavedResponses && (
+                {showSavedResponses && !isWindowClosed && (
                   <SavedResponsesDropdown
                     onSelect={handleSavedResponseSelect}
                     onClose={() => setShowSavedResponses(false)}
@@ -288,7 +347,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowTemplateComposer(true)}
-              className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 transition-colors"
+              className={cn(
+                'p-2 rounded-lg transition-colors',
+                isWindowClosed
+                  ? 'bg-primary-100 text-primary-600 ring-2 ring-primary-200'
+                  : 'text-neutral-500 hover:bg-neutral-100'
+              )}
               title="Send template message"
             >
               <FileText size={20} />
@@ -302,44 +366,47 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder={isWindowClosed ? 'Free-form messages disabled - Use templates' : 'Type a message...'}
               className={cn(
-                'w-full px-4 py-2.5 pr-12 rounded-lg border border-neutral-300',
-                'bg-white text-neutral-900 placeholder:text-neutral-400',
-                'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
+                'w-full px-4 py-2.5 pr-12 rounded-lg border',
+                isWindowClosed
+                  ? 'border-neutral-200 bg-neutral-50 text-neutral-400 cursor-not-allowed'
+                  : 'border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
                 'resize-none transition-all',
                 'min-h-[44px] max-h-[150px]'
               )}
               rows={1}
-              disabled={isSending || isUploading}
+              disabled={isSending || isUploading || isWindowClosed}
             />
 
             {/* Emoji Picker Button */}
-            <div className="absolute right-2 bottom-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className={cn(
-                  'p-1.5 rounded-lg transition-colors',
-                  showEmojiPicker
-                    ? 'bg-primary-100 text-primary-600'
-                    : 'text-neutral-500 hover:bg-neutral-100'
-                )}
-                title="Add emoji"
-              >
-                <Smile size={18} />
-              </motion.button>
+            {!isWindowClosed && (
+              <div className="absolute right-2 bottom-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className={cn(
+                    'p-1.5 rounded-lg transition-colors',
+                    showEmojiPicker
+                      ? 'bg-primary-100 text-primary-600'
+                      : 'text-neutral-500 hover:bg-neutral-100'
+                  )}
+                  title="Add emoji"
+                >
+                  <Smile size={18} />
+                </motion.button>
 
-              <AnimatePresence>
-                {showEmojiPicker && (
-                  <EmojiPicker
-                    onEmojiSelect={handleEmojiSelect}
-                    onClose={() => setShowEmojiPicker(false)}
-                  />
-                )}
-              </AnimatePresence>
-            </div>
+                <AnimatePresence>
+                  {showEmojiPicker && (
+                    <EmojiPicker
+                      onEmojiSelect={handleEmojiSelect}
+                      onClose={() => setShowEmojiPicker(false)}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
 
           {/* Send Button */}
@@ -354,10 +421,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
                 ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm hover:shadow-md'
                 : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
             )}
-            title="Send message"
+            title={isWindowClosed ? 'Window closed - Use templates' : 'Send message'}
           >
             {isSending || isUploading ? (
               <Loader2 size={20} className="animate-spin" />
+            ) : isWindowClosed ? (
+              <Lock size={20} />
             ) : (
               <Send size={20} />
             )}
@@ -366,7 +435,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) =>
 
         {/* Helper Text */}
         <div className="mt-2 text-xs text-neutral-500">
-          Press Enter to send, Shift+Enter for new line
+          {isWindowClosed 
+            ? isAdmin
+              ? '🔒 Free-form messages disabled. Click the template button to send approved messages.'
+              : '⛔ You cannot send messages. Contact admin or wait for customer reply.'
+            : 'Press Enter to send, Shift+Enter for new line'
+          }
         </div>
       </div>
 

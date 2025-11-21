@@ -7,49 +7,72 @@
  * Format message time (e.g., "10:30 AM")
  */
 export function formatMessageTime(date: string | Date): string {
-  return new Date(date).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  if (!date) return 'Invalid Date';
+  
+  try {
+    const parsedDate = new Date(date);
+    // Check if date is valid
+    if (isNaN(parsedDate.getTime())) {
+      return 'Invalid Date';
+    }
+    
+    return parsedDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return 'Invalid Date';
+  }
 }
 
 /**
  * Format message date for grouping (e.g., "Today", "Yesterday", "Jan 15, 2024")
  */
 export function formatMessageDate(date: string | Date): string {
-  const messageDate = new Date(date);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  if (!date) return 'Invalid Date';
+  
+  try {
+    const messageDate = new Date(date);
+    // Check if date is valid
+    if (isNaN(messageDate.getTime())) {
+      return 'Invalid Date';
+    }
 
-  // Reset time to midnight for comparison
-  const messageDateMidnight = new Date(messageDate);
-  messageDateMidnight.setHours(0, 0, 0, 0);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-  const todayMidnight = new Date(today);
-  todayMidnight.setHours(0, 0, 0, 0);
+    // Reset time to midnight for comparison
+    const messageDateMidnight = new Date(messageDate);
+    messageDateMidnight.setHours(0, 0, 0, 0);
 
-  const yesterdayMidnight = new Date(yesterday);
-  yesterdayMidnight.setHours(0, 0, 0, 0);
+    const todayMidnight = new Date(today);
+    todayMidnight.setHours(0, 0, 0, 0);
 
-  if (messageDateMidnight.getTime() === todayMidnight.getTime()) {
-    return 'Today';
-  } else if (messageDateMidnight.getTime() === yesterdayMidnight.getTime()) {
-    return 'Yesterday';
-  } else if (messageDate.getFullYear() === today.getFullYear()) {
-    // Same year, show month and day
-    return messageDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-  } else {
-    // Different year, show full date
-    return messageDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const yesterdayMidnight = new Date(yesterday);
+    yesterdayMidnight.setHours(0, 0, 0, 0);
+
+    if (messageDateMidnight.getTime() === todayMidnight.getTime()) {
+      return 'Today';
+    } else if (messageDateMidnight.getTime() === yesterdayMidnight.getTime()) {
+      return 'Yesterday';
+    } else if (messageDate.getFullYear() === today.getFullYear()) {
+      // Same year, show month and day
+      return messageDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+    } else {
+      // Different year, show full date
+      return messageDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  } catch {
+    return 'Invalid Date';
   }
 }
 
@@ -57,35 +80,45 @@ export function formatMessageDate(date: string | Date): string {
  * Format message timestamp with relative time
  */
 export function formatMessageTimestamp(date: string | Date): string {
-  const messageDate = new Date(date);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - messageDate.getTime()) / 1000);
+  if (!date) return 'Invalid Date';
+  try {
+    const messageDate = new Date(date);
+    // Check if date is valid
+    if (isNaN(messageDate.getTime())) {
+      return 'Invalid Date';
+    }
 
-  // Less than a minute
-  if (diffInSeconds < 60) {
-    return 'Just now';
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - messageDate.getTime()) / 1000);
+
+    // Less than a minute
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    }
+
+    // Less than an hour
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    }
+
+    // Less than a day
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    }
+
+    // Less than a week
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+      return `${diffInDays}d ago`;
+    }
+
+    // More than a week, show date
+    return formatMessageDate(date);
+  } catch {
+    return 'Invalid Date';
   }
-
-  // Less than an hour
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes}m ago`;
-  }
-
-  // Less than a day
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) {
-    return `${diffInHours}h ago`;
-  }
-
-  // Less than a week
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) {
-    return `${diffInDays}d ago`;
-  }
-
-  // More than a week, show date
-  return formatMessageDate(date);
 }
 
 /**

@@ -1832,7 +1832,7 @@ export class TemplatesService {
     };
 
     // Create template
-    const template = this.templatesRepository.create({
+    const templateData: any = {
       tenantId,
       name: metaTemplate.name,
       displayName: metaTemplate.name,
@@ -1848,9 +1848,10 @@ export class TemplatesService {
       approvedAt: metaTemplate.status === 'APPROVED' ? new Date() : null,
       rejectedAt: metaTemplate.status === 'REJECTED' ? new Date() : null,
       rejectionReason: metaTemplate.rejection_reason || null,
-    });
+    };
 
-    return await this.templatesRepository.save(template);
+    const template = this.templatesRepository.create(templateData);
+    return (await this.templatesRepository.save(template)) as unknown as Template;
   }
 
 }

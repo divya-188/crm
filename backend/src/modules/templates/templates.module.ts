@@ -34,6 +34,8 @@ import { TemplateCursorPaginationService } from './services/template-cursor-pagi
 import { TemplateQueryOptimizerService } from './services/template-query-optimizer.service';
 import { TemplateSyncService } from './services/template-sync.service';
 import { CommonModule } from '../../common/common.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
+import { WebhookLog } from '../webhooks/entities/webhook-log.entity';
 
 @Module({
   imports: [
@@ -46,7 +48,9 @@ import { CommonModule } from '../../common/common.module';
       TemplateAuditLog,
       Campaign,
       WhatsAppConfig,
+      WebhookLog,
     ]),
+    WebhooksModule,
     BullModule.registerQueue({
       name: 'template-status',
       defaultJobOptions: {

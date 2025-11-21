@@ -119,9 +119,15 @@ export interface Conversation {
   id: string;
   tenantId: string;
   contactId: string;
-  contact?: Contact;
-  whatsAppConnectionId: string;
-  assignedAgentId?: string;
+  contact: Contact;
+  whatsAppConnectionId?: string;
+  assignedToId?: string;
+  assignedTo?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl?: string;
+  };
   assignedAgent?: {
     id: string;
     firstName: string;
@@ -129,7 +135,8 @@ export interface Conversation {
     avatarUrl?: string;
   };
   status: ConversationStatus;
-  tags: string[];
+  tags?: string[] | null;
+  internalNotes?: string | null;
   unreadCount: number;
   lastMessage?: Message;
   lastMessageAt?: string;
@@ -154,20 +161,21 @@ export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed';
 
 export interface Message {
   id: string;
-  tenantId: string;
+  tenantId?: string;
   conversationId: string;
   whatsAppMessageId?: string;
   direction: MessageDirection;
   type: MessageType;
   content?: string;
   mediaUrl?: string;
-  metadata: MessageMetadata;
+  metadata?: MessageMetadata;
   status?: MessageStatus;
   sentByUserId?: string;
-  sentAt: string;
+  sentAt?: string;
   deliveredAt?: string;
   readAt?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface MessageMetadata {
